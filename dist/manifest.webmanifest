@@ -1,0 +1,17 @@
+{
+  "name": "Nexus Chat",
+  "short_name": "Nexus",
+  "description": "Secure messaging, voice calls, and privacy-first chat in one app",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -8,7 +8,9 @@ import { useSetting } from '../../hooks/useSetting'
 import { getWallpaperById } from '../../lib/wallpapers'
 import { encryptMessage, decryptMessage, isE2EEEnabled } from '../../lib/crypto/e2ee'
 import { useVoiceCall } from '../../hooks/useVoiceCall'
-import { appendMessage, getChatById } from '../../lib/persistence'
+import { appendMessage } from '../../lib/persistence'
+import { sendSupabaseMessage } from '../../lib/supabaseChat'
+import { showIncomingNotification } from '../../lib/notifications'
 
 export default function ChatView({ chat, onBack }) {
   const [messages, setMessages] = useState(chat?.messages || [])
@@ -71,8 +73,30 @@ export default function ChatView({ chat, onBack }) {
       }))
     }
 
-    appendMessage(chat.id, newMessage)
-    setMessages(prev => [...prev, newMessage])
+    const savedMessage = await appendMessage(chat.id, newMessage)
+    setMessages(prev => [...prev, savedMessage || newMessage])
+
+    if (chat.id && typeof window !== 'undefined') {
+      try {
+        await sendSupabaseMessage(chat.id, {
+          ...newMessage,
+          sender_id: newMessage.sender_id,
+        })
+      } catch {
+        // If Supabase messaging is unavailable, continue using local persistence.
+      }
+    }
+
+    const preview = type === 'text'
+      ? (messageData.content || messageData)
+      : `${type === 'file' ? 'Shared a file' : type === 'sticker' ? 'Sent a sticker' : type === 'image' ? 'Shared an image' : 'Shared media'} · ${messageData.file_name || 'Tap to view'}`
+
+    showIncomingNotification({
+      title: chat.title || 'New activity',
+      preview: preview.length > 80 ? `${preview.slice(0, 77)}...` : preview,
+      avatarUrl: chat.avatar_url || '/logo.png',
+      type,
+    })
   }
 
   const wallpaperStyle = wallpaper.url

@@ -9,9 +9,11 @@ function normalizeUser(user) {
   return {
     id: user.id,
     memberId: user.member_id || user.memberId,
+    memberIdDisplay: user.memberIdDisplay || formatMemberIdForDisplay(user.member_id || user.memberId),
     firstName: user.first_name || user.firstName,
     lastName: user.last_name || user.lastName,
     fullName: user.full_name || user.fullName || `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.trim(),
+    role: user.role || user.user_role || user.profile_role || 'user',
     password: user.password,
     createdAt: user.created_at || user.createdAt
   }
@@ -24,6 +26,12 @@ function generateMemberId(existingUsers) {
     candidate = String(Math.floor(1000000000 + Math.random() * 9000000000))
   } while (usedIds.has(candidate))
   return candidate
+}
+
+function formatMemberIdForDisplay(raw) {
+  const s = String(raw || '')
+  if (s.length !== 10) return s
+  return `${s.slice(0,2)}-${s.slice(2,6)}-${s.slice(6,10)}`
 }
 
 function readStoredUsers() {
@@ -104,7 +112,7 @@ export function AuthProvider({ children }) {
         return { user: sessionUser, memberId: sessionUser.memberId }
       } catch (err) {
         if (storedUsers.length) {
-          const fallbackUser = storedUsers.find((candidate) => candidate.member_id || candidate.memberId === normalizedId)
+          const fallbackUser = storedUsers.find((candidate) => (candidate.member_id || candidate.memberId) === normalizedId)
           if (fallbackUser) {
             if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
               throw new Error('Incorrect password for this member number.')
@@ -149,12 +157,14 @@ export function AuthProvider({ children }) {
       id: `${Date.now()}`,
       member_id: memberId,
       memberId,
+      memberIdDisplay: formatMemberIdForDisplay(memberId),
       first_name: normalizedFirstName,
       firstName: normalizedFirstName,
       last_name: normalizedLastName,
       lastName: normalizedLastName,
       full_name: fullName,
       fullName,
+      role: 'user',
       password: generatedPassword,
       created_at: new Date().toISOString(),
       createdAt: new Date().toISOString()
@@ -165,6 +175,7 @@ export function AuthProvider({ children }) {
         const { data, error } = await supabase.from('members').insert(newUser).select().single()
         if (error) throw error
         const sessionUser = normalizeUser(data || newUser)
+        sessionUser.memberIdDisplay = formatMemberIdForDisplay(sessionUser.memberId)
         if (typeof window !== 'undefined') {
           localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
         }
@@ -174,6 +185,7 @@ export function AuthProvider({ children }) {
         const nextUsers = [newUser, ...storedUsers]
         writeStoredUsers(nextUsers)
         const sessionUser = normalizeUser(newUser)
+        sessionUser.memberIdDisplay = formatMemberIdForDisplay(sessionUser.memberId)
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
         setUser(sessionUser)
         return { user: sessionUser, memberId, password: generatedPassword }
@@ -183,6 +195,7 @@ export function AuthProvider({ children }) {
     const nextUsers = [newUser, ...storedUsers]
     writeStoredUsers(nextUsers)
     const sessionUser = normalizeUser(newUser)
+    sessionUser.memberIdDisplay = formatMemberIdForDisplay(sessionUser.memberId)
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
     setUser(sessionUser)
     return { user: sessionUser, memberId, password: generatedPassword }
@@ -206,3 +219,5 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext)
 }
+
+export { formatMemberIdForDisplay }

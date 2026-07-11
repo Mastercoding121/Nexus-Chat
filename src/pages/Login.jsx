@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
+import AuthShell from '../components/AuthShell'
 
 export default function Login() {
   const [memberId, setMemberId] = useState('')
@@ -11,14 +12,6 @@ export default function Login() {
   const [theme, setTheme] = useState('light')
   const { login } = useAuth()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const stored = localStorage.getItem('nexus-theme')
-    const resolved = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    setTheme(resolved)
-    document.documentElement.classList.toggle('dark', resolved === 'dark')
-    document.documentElement.style.colorScheme = resolved
-  }, [])
 
   const themeClasses = useMemo(() => theme === 'dark'
     ? {
@@ -42,8 +35,9 @@ export default function Login() {
     setLoading(true)
 
     try {
-      await login(memberId, password)
-      navigate('/app')
+      const result = await login(memberId, password)
+      const destination = result?.user?.role === 'admin' ? '/admin' : '/app'
+      navigate(destination)
     } catch (err) {
       setError(err.message || 'Login failed')
     } finally {
@@ -52,19 +46,16 @@ export default function Login() {
   }
 
   return (
-    <div className={`min-h-screen px-4 py-10 transition-colors duration-300 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <div className={`mx-auto flex max-w-5xl flex-col gap-8 rounded-[32px] border p-6 shadow-2xl backdrop-blur-xl lg:flex-row lg:p-10 ${themeClasses.shell}`}>
+    <AuthShell
+      title="Welcome back to Nexus"
+      subtitle="Sign in using your unique 10-digit member number and password. Your session stays locked in until you log out."
+      compact
+    >
+      <div className="flex flex-col gap-8 lg:flex-row">
         <div className={`flex-1 rounded-[24px] border p-8 ${theme === 'dark' ? 'border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-slate-900' : 'border-blue-200 bg-gradient-to-br from-blue-50 to-white'}`}>
-          <Link to="/" className={`inline-flex items-center gap-2 text-sm font-medium transition ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-            <ArrowLeft className="h-4 w-4" /> Back home
-          </Link>
-          <div className={`mt-8 rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-blue-400/30 bg-blue-500/10 text-blue-200' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
+          <div className={`rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-blue-400/30 bg-blue-500/10 text-blue-200' : 'border-blue-200 bg-blue-50 text-blue-700'}`}>
             Secure access
           </div>
-          <h1 className="mt-4 text-3xl font-semibold">Welcome back to Nexus</h1>
-          <p className={`mt-3 max-w-md text-sm leading-6 ${themeClasses.muted}`}>
-            Sign in using your unique 10-digit member number and password. Your session stays locked in until you log out.
-          </p>
           <div className={`mt-6 rounded-2xl border p-4 text-sm ${theme === 'dark' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
             <div className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="h-4 w-4" /> Protected by end-to-end encryption
@@ -121,6 +112,6 @@ export default function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </AuthShell>
   )
 }

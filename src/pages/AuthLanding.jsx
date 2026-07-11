@@ -1,6 +1,7 @@
-import { ArrowRight, Briefcase, Download, Mic, Shield, Sparkles, Users, Monitor, Smartphone, Tablet, Apple } from 'lucide-react'
+import { Apple, ArrowRight, Download, Grid2x2, Mic, Monitor, Moon, Shield, Smartphone, Sparkles, Sun, Tablet, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Header from '../components/Header'
 
 const features = [
   {
@@ -31,8 +32,7 @@ const platforms = [
 function getThemePreference() {
   if (typeof window === 'undefined') return 'light'
   const stored = localStorage.getItem('nexus-theme')
-  if (stored) return stored
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return stored || 'light'
 }
 
 export default function AuthLanding() {
@@ -74,41 +74,20 @@ export default function AuthLanding() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-between px-6 py-8 lg:px-10 lg:py-10">
-        <header className={`flex flex-wrap items-center justify-between gap-4 rounded-full border px-4 py-3 shadow-lg backdrop-blur-xl ${themeClasses.shell}`}>
-          <div className="flex items-center gap-3">
-            <div className="brand-spin flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-400 to-sky-300 p-1 shadow-lg">
-              <img src="/logo.svg" alt="Nexus logo" className="h-full w-full rounded-xl object-contain" />
-            </div>
-            <div>
-              <p className="text-sm uppercase tracking-[0.35em] text-blue-500">Nexus</p>
-              <h1 className="text-base font-semibold">Secure messaging, reimagined</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={toggleTheme} className={`rounded-full px-4 py-2 text-sm font-medium transition ${themeClasses.secondaryButton}`}>
-              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
-            </button>
-            <Link to="/invest" className={`rounded-full px-4 py-2 text-sm font-medium transition ${themeClasses.secondaryButton}`}>
-              Invest
-            </Link>
-            <Link to="/login" className={`rounded-full px-4 py-2 text-sm font-semibold transition ${themeClasses.button}`}>
-              Sign in
-            </Link>
-          </div>
-        </header>
+      <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-between px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+        <Header />
 
-        <main className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1.05fr_0.95fr] lg:py-12">
+        <main className="grid flex-1 items-center gap-10 py-8 lg:grid-cols-[1.03fr_0.97fr] lg:gap-12 lg:py-10">
           <section className="max-w-2xl">
-            <div className={`mb-6 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${themeClasses.chip}`}>
+            <div className={`mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${themeClasses.chip}`}>
               <Sparkles className="h-4 w-4" />
-              Premium secure communication experience
+              Privacy-first encrypted messaging experience
             </div>
-            <h2 className="text-4xl font-bold leading-tight sm:text-5xl">
-              Connect with private conversations and a smarter investment hub.
+            <h2 className="text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl">
+              Connect with private conversations and a privacy-first messaging hub.
             </h2>
-            <p className={`mt-5 max-w-xl text-lg ${themeClasses.muted}`}>
-              Launch secure chats, share media, make voice calls, and explore a polished investment machine with ROI insights from the same modern experience.
+            <p className={`mt-5 max-w-xl text-lg leading-8 ${themeClasses.muted}`}>
+              Launch secure chats, share media, make voice calls, and keep your conversations encrypted across desktop and mobile.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -116,7 +95,7 @@ export default function AuthLanding() {
                 Create account <ArrowRight className="h-4 w-4" />
               </Link>
               <Link to="/login" className={`inline-flex items-center gap-2 rounded-full border px-5 py-3 font-semibold transition ${themeClasses.secondaryButton}`}>
-                Open dashboard <ArrowRight className="h-4 w-4" />
+                Open app <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
@@ -134,7 +113,7 @@ export default function AuthLanding() {
             </div>
           </section>
 
-          <section className={`rounded-[28px] border p-6 shadow-2xl backdrop-blur-xl ${themeClasses.card}`}>
+          <section className={`rounded-[28px] border p-6 shadow-2xl backdrop-blur-xl sm:p-7 lg:p-8 ${themeClasses.card}`}>
             <div className={`rounded-2xl border p-4 ${theme === 'dark' ? 'border-blue-500/20 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
               <p className={`text-sm font-medium ${theme === 'dark' ? 'text-blue-200' : 'text-blue-700'}`}>Ready-made app download</p>
               <h3 className="mt-2 text-xl font-semibold">Get Nexus for Android, PC, tablets, Mac and iPhone</h3>
@@ -142,11 +121,23 @@ export default function AuthLanding() {
                 Download the ready-made app package for your device and install it. If your device shows an “Unknown Source” warning, it is safe to proceed and continue the installation.
               </p>
               <div className="mt-5 flex flex-wrap gap-3">
-                <a href="https://github.com/Mastercoding121/Uplifting-The-People.git" target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${themeClasses.button}`}>
-                  <Download className="h-4 w-4" /> Download app
+                {typeof navigator !== 'undefined' && (() => {
+                  const isAndroidWeb = /Android/i.test(navigator.userAgent) && !(typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
+                  return isAndroidWeb ? (
+                    <a href="https://nexus-chat-big-hit.vercel.app/app-release.apk" download className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${themeClasses.button}`}>
+                      <Grid2x2 className="h-4 w-4" /> Android app
+                    </a>
+                  ) : (
+                    <a href="https://developer.android.com/studio" target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${themeClasses.button}`}>
+                      <Grid2x2 className="h-4 w-4" /> Android app
+                    </a>
+                  )
+                })()}
+                <a href="https://developer.apple.com/xcode/" target="_blank" rel="noreferrer" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 font-semibold transition ${themeClasses.secondaryButton}`}>
+                  <Apple className="h-4 w-4" /> iOS app
                 </a>
-                <Link to="/invest" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 font-semibold transition ${themeClasses.secondaryButton}`}>
-                  <Briefcase className="h-4 w-4" /> Explore investment
+                <Link to="/login" className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 font-semibold transition ${themeClasses.secondaryButton}`}>
+                  <ArrowRight className="h-4 w-4" /> Open app
                 </Link>
               </div>
             </div>
@@ -159,7 +150,7 @@ export default function AuthLanding() {
                 <li>• Secure sign-in with member number</li>
                 <li>• Voice, media and chat support</li>
                 <li>• Wallpaper and settings customization</li>
-                <li>• Investment machine with ROI insights</li>
+                <li>• Cross-device messaging and privacy controls</li>
               </ul>
             </div>
 

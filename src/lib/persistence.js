@@ -110,6 +110,67 @@ function writeLocalChats(chats) {
   return chats
 }
 
+function notifyChatUpdate() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('nexus-chat:updated'))
+  }
+}
+
+export function startRealtimeListeners() {
+  if (!supabase || !isSupabaseConfigured()) return null
+
+  const channel = supabase.channel('public-realtime')
+
+  channel.on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'messages' },
+    async (payload) => {
+      const msg = payload.new
+      if (!msg || !msg.chat_id) return
+
+      await appendMessage(String(msg.chat_id), {
+        id: String(msg.id),
+        sender_id: String(msg.sender_id || 'other'),
+        content: msg.content,
+        type: msg.type || 'text',
+        file_url: msg.file_url || null,
+        file_name: msg.file_name || null,
+        encrypted: Boolean(msg.encrypted),
+        created_at: msg.created_at || new Date().toISOString(),
+      })
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nexus:incoming-notification', {
+          detail: {
+            title: 'New message',
+            preview: msg.type === 'text' ? msg.content : 'New attachment received',
+            avatarUrl: '/logo.png',
+            type: 'message',
+          },
+        }))
+      }
+    }
+  )
+
+  const chatChanged = async () => {
+    await readChats()
+    notifyChatUpdate()
+  }
+
+  channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats' }, chatChanged)
+  channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chats' }, chatChanged)
+  channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chats' }, chatChanged)
+
+  channel.subscribe()
+  return channel
+}
+
+export function stopRealtimeListeners(channel) {
+  if (channel && typeof channel.unsubscribe === 'function') {
+    channel.unsubscribe()
+  }
+}
+
 export async function readChats() {
   if (supabase && isSupabaseConfigured()) {
     try {
@@ -153,11 +214,6 @@ export async function getChats() {
   return readChats()
 }
 
-export async function getChatById(chatId) {
-  const chats = await getChats()
-  return chats.find(chat => chat.id === chatId) || null
-}
-
 export async function appendMessage(chatId, message) {
   const chats = await getChats()
   const chat = chats.find(item => item.id === chatId)
@@ -176,9 +232,14 @@ export async function appendMessage(chatId, message) {
     created_at: message.created_at || new Date().toISOString(),
   }
 
+  const existingMessages = Array.isArray(chat.messages) ? chat.messages : []
+  if (existingMessages.some((m) => m.id === nextMessage.id)) {
+    return chat
+  }
+
   const updatedChat = {
     ...chat,
-    messages: [...(chat.messages || []), nextMessage],
+    messages: [...existingMessages, nextMessage],
     last_message: nextMessage.content,
     last_message_time: nextMessage.created_at,
     unread_count: 0,
@@ -187,6 +248,43 @@ export async function appendMessage(chatId, message) {
   const updatedChats = chats.map(item => (item.id === chatId ? updatedChat : item))
   await writeChats(updatedChats)
   return updatedChat
+}
+
+export async function getChatById(chatId) {
+  if (supabase && isSupabaseConfigured()) {
+    try {
+      const { data: chatData, error: chatError } = await supabase.from('chats').select('*').eq('id', chatId).single()
+      if (!chatError && chatData) {
+        const { data: messageData, error: messageError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('chat_id', chatId)
+          .order('created_at', { ascending: true })
+
+        if (!messageError && Array.isArray(messageData)) {
+          return {
+            ...chatData,
+            id: String(chatData.id),
+            messages: messageData.map((msg) => ({
+              ...msg,
+              id: String(msg.id),
+            })),
+          }
+        }
+
+        return {
+          ...chatData,
+          id: String(chatData.id),
+          messages: [],
+        }
+      }
+    } catch {
+      // Fall back to local persistence on any Supabase failure.
+    }
+  }
+
+  const chats = await getChats()
+  return chats.find(chat => chat.id === chatId) || null
 }
 
 export async function createChat(chatData) {

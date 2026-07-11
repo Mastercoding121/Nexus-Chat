@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import AuthShell from '../components/AuthShell'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -25,12 +26,11 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full p-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-        <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">Forgot Password</h2>
+    <AuthShell title="Forgot your password?" subtitle="Enter the email connected to your account and we’ll guide you through the reset flow." compact>
+      <div className="mx-auto w-full max-w-md">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
               Email
             </label>
             <input
@@ -38,27 +38,27 @@ export default function ForgotPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               placeholder="you@example.com"
             />
           </div>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-          {message && <p className="text-green-500 text-sm text-center">{message}</p>}
+          {error && <p className="text-center text-sm text-red-500">{error}</p>}
+          {message && <p className="text-center text-sm text-green-500">{message}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400"
           >
             {loading ? 'Sending...' : 'Send Reset Email'}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
           Remember your password?{' '}
-          <Link to="/login" className="text-blue-600 hover:underline dark:text-blue-400 font-medium">
+          <Link to="/login" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
             Log in
           </Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   )
 }

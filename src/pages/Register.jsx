@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
+import AuthShell from '../components/AuthShell'
 
 export default function Register() {
   const [firstName, setFirstName] = useState('')
@@ -13,14 +14,6 @@ export default function Register() {
   const [theme, setTheme] = useState('light')
   const { register } = useAuth()
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const stored = localStorage.getItem('nexus-theme')
-    const resolved = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    setTheme(resolved)
-    document.documentElement.classList.toggle('dark', resolved === 'dark')
-    document.documentElement.style.colorScheme = resolved
-  }, [])
 
   const themeClasses = useMemo(() => theme === 'dark'
     ? {
@@ -55,18 +48,14 @@ export default function Register() {
 
   if (memberDetails) {
     return (
-      <div className={`min-h-screen px-4 py-10 transition-colors duration-300 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-        <div className={`mx-auto flex max-w-2xl flex-col rounded-[32px] border p-8 shadow-2xl backdrop-blur-xl ${theme === 'dark' ? 'border-emerald-500/20 bg-slate-950/70 shadow-emerald-950/40' : 'border-emerald-200 bg-white/80 shadow-emerald-100'}`}>
+      <AuthShell title="Your secure member account is ready" subtitle="Save your member number and password. You will use them to sign in on any device." compact>
+        <div className={`flex flex-col rounded-[24px] border p-8 ${theme === 'dark' ? 'border-emerald-500/20 bg-slate-900/60' : 'border-emerald-200 bg-white/80'}`}>
           <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
             <Sparkles className="h-4 w-4" /> Member created
           </div>
-          <h1 className="mt-4 text-3xl font-semibold">Your secure member account is ready</h1>
-          <p className={`mt-3 text-sm leading-6 ${themeClasses.muted}`}>
-            Save your member number and password. You will use them to sign in on any device.
-          </p>
           <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-blue-500/20 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
             <p className={`text-sm ${themeClasses.muted}`}>Member number</p>
-            <p className="mt-2 text-2xl font-semibold tracking-[0.25em]">{memberDetails.memberId}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[0.25em]">{memberDetails.memberIdDisplay || memberDetails.memberId}</p>
             <p className={`mt-4 text-sm ${themeClasses.muted}`}>Password</p>
             <p className="mt-2 text-lg font-semibold">{memberDetails.password}</p>
           </div>
@@ -79,22 +68,19 @@ export default function Register() {
             </Link>
           </div>
         </div>
-      </div>
+      </AuthShell>
     )
   }
 
   return (
-    <div className={`min-h-screen px-4 py-10 transition-colors duration-300 sm:px-6 lg:px-8 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <div className={`mx-auto flex max-w-5xl flex-col gap-8 rounded-[32px] border p-6 shadow-2xl backdrop-blur-xl lg:flex-row lg:p-10 ${themeClasses.shell}`}>
+    <AuthShell
+      title="Create your secure Nexus account"
+      subtitle="Start with your first and last name. Add a password if you want one, or leave it blank for a generated secure one."
+      compact
+    >
+      <div className="flex flex-col gap-8 lg:flex-row">
         <div className={`flex-1 rounded-[24px] border p-8 ${theme === 'dark' ? 'border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-slate-900' : 'border-blue-200 bg-gradient-to-br from-blue-50 to-white'}`}>
-          <Link to="/" className={`inline-flex items-center gap-2 text-sm font-medium transition ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
-            <ArrowLeft className="h-4 w-4" /> Back home
-          </Link>
-          <h1 className="mt-8 text-3xl font-semibold">Create your secure Nexus account</h1>
-          <p className={`mt-3 max-w-md text-sm leading-6 ${themeClasses.muted}`}>
-            Start with your first and last name. Add a password if you want one, or leave it blank for a generated secure one.
-          </p>
-          <div className={`mt-6 rounded-2xl border p-4 text-sm ${theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+          <div className={`rounded-2xl border p-4 text-sm ${theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
             • Fast onboarding<br />
             • Private member number sign-in<br />
             • Syncs into the protected chat experience
@@ -156,6 +142,6 @@ export default function Register() {
           </p>
         </div>
       </div>
-    </div>
+    </AuthShell>
   )
 }

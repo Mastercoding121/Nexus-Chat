@@ -36,32 +36,32 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 222.2 84% 6.4%;
+    --foreground: 210 40% 96%;
 
-    --card: 222.2 47.4% 11.2%;
-    --card-foreground: 210 40% 98%;
+    --card: 222.2 47.4% 10.8%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 222.2 47.4% 11.2%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 222.2 47.4% 10.8%;
+    --popover-foreground: 210 40% 96%;
 
     --primary: 213.3 93.9% 67.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 14.6%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 217.2 32.6% 14.6%;
+    --muted-foreground: 215 20.2% 74%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 217.2 32.6% 15.2%;
+    --accent-foreground: 210 40% 96%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 18%;
+    --input: 217.2 32.6% 18%;
     --ring: 213.3 93.9% 67.8%;
   }
 }
@@ -84,6 +84,26 @@
   }
 }
 
+@keyframes brand-float {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.04);
+  }
+}
+
+@keyframes brand-orbit {
+  0%,
+  100% {
+    transform: perspective(900px) rotateX(10deg) rotateY(-8deg) translateY(0px) scale(1);
+  }
+  50% {
+    transform: perspective(900px) rotateX(-6deg) rotateY(10deg) translateY(-5px) scale(1.03);
+  }
+}
+
 @keyframes float-up {
   0%,
   100% {
@@ -94,8 +114,31 @@
   }
 }
 
+@keyframes slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.brand-badge {
+  box-shadow: 0 18px 45px rgba(59, 130, 246, 0.24);
+}
+
 .brand-spin {
-  animation: brand-spin 10s linear infinite;
+  animation: brand-spin 12s linear infinite;
+}
+
+.brand-float {
+  animation: brand-float 3.2s ease-in-out infinite;
+}
+
+.brand-orbit {
+  animation: brand-orbit 4.8s ease-in-out infinite;
 }
 
 .float-card {
