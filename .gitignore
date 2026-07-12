@@ -32,3 +32,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android large files (exceeds GitHub limits)
+android/gradle-dist/
+android/gradle-wrapper.zip
+android/*-bin.zip
+android/.gradle/
+android/app/build/
+android/capacitor-android/build/
+android/gradle/wrapper/
