@@ -23,7 +23,9 @@ function generateMemberId(existingUsers) {
   const usedIds = new Set(existingUsers.map((user) => user.member_id || user.memberId))
   let candidate = ''
   do {
-    candidate = String(Math.floor(1000000000 + Math.random() * 9000000000))
+    // Generate 10-digit ID starting with 100 (10-0xxx-xxxx format)
+    const randomSuffix = String(Math.floor(Math.random() * 10000000)).padStart(7, '0')
+    candidate = `100${randomSuffix}`
   } while (usedIds.has(candidate))
   return candidate
 }
