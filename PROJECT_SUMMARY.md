@@ -45,8 +45,10 @@ Nexus Chat is a modern messaging and community experience built with React, Vite
 ## Notes: UI & Formatting Updates
 - Header: Replaced duplicated header markup with a shared `Header` component used across `AuthLanding.jsx`, `Login.jsx`, and `Register.jsx`. The same persistent branded header now appears on all auth pages, preserves current animations, and keeps the existing `Capacitor.isNativePlatform()` native platform guard.
 - Brand logo animation: The `Header` logo now chooses a random animation style on each load and keeps that branded effect consistent across all public and auth routes.
-- Member ID formatting: Member numbers are now rendered for display using the `XX-XXXX-XXXX` pattern (e.g., `10-1234-5678`). The formatter is implemented in `src/lib/AuthContext.jsx` as `formatMemberIdForDisplay` and stored in session objects as `memberIdDisplay` for UI rendering.
-- Android APK hosting: The Android download button on the landing page will download `https://nexus-chat-big-hit.vercel.app/app-release.apk` for Android web users (uses the `download` attribute).
+- Nexus ID formatting: Nexus numbers are now rendered for display using the `10-XXXX-XXXX` pattern (e.g. `10-1234-5678`). The formatter is implemented in `src/lib/AuthContext.jsx` as `formatNexusIdForDisplay` and stored in session objects as `nexusIdDisplay` for UI rendering.
+- Custom Nexus Number Input: Implemented `src/components/NexusNumberInput.jsx` that auto-formats the input as the user types and uses a mobile-optimized numeric keyboard.
+- Multi-font Support: Added Google Fonts (Inter, Poppins, Roboto, Open Sans) and utility classes for easy font switching.
+- Android APK hosting: The Android download button on the landing page will download `https://nexus-chat-sandy-alpha.vercel.app/app-release.apk` for Android web users (uses the `download` attribute).
 
 ## Next Priorities
 - Verify the full auth and persistence flow in the browser

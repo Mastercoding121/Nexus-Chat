@@ -50,7 +50,7 @@ export default function AdminDashboard() {
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
             Monitor active members, review recent messages, and protect the encrypted messaging experience.
           </p>
-          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Signed in as {user?.fullName || user?.memberId}</p>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">Signed in as {user?.fullName || user?.nexusId}</p>
         </div>
 
         {loading ? (

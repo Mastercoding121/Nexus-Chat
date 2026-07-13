@@ -8,8 +8,8 @@ const USER_STORAGE_KEY = 'nexus-chat-users'
 function normalizeUser(user) {
   return {
     id: user.id,
-    memberId: user.member_id || user.memberId,
-    memberIdDisplay: user.memberIdDisplay || formatMemberIdForDisplay(user.member_id || user.memberId),
+    nexusId: user.nexus_id || user.nexusId || user.member_id || user.memberId,
+    nexusIdDisplay: user.nexusIdDisplay || user.memberIdDisplay || formatNexusIdForDisplay(user.nexus_id || user.nexusId || user.member_id || user.memberId),
     firstName: user.first_name || user.firstName,
     lastName: user.last_name || user.lastName,
     fullName: user.full_name || user.fullName || `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.trim(),
@@ -19,21 +19,30 @@ function normalizeUser(user) {
   }
 }
 
-function generateMemberId(existingUsers) {
-  const usedIds = new Set(existingUsers.map((user) => user.member_id || user.memberId))
+function generateNexusId(existingUsers) {
+  const usedIds = new Set(existingUsers.map((user) => user.nexus_id || user.nexusId || user.member_id || user.memberId))
   let candidate = ''
   do {
-    // Generate 10-digit ID starting with 100 (10-0xxx-xxxx format)
-    const randomSuffix = String(Math.floor(Math.random() * 10000000)).padStart(7, '0')
-    candidate = `100${randomSuffix}`
+    // Generate 10-digit ID starting with 10 (10-xxxx-xxxx format)
+    const randomSuffix = String(Math.floor(Math.random() * 100000000)).padStart(8, '0')
+    candidate = `10${randomSuffix}`
   } while (usedIds.has(candidate))
   return candidate
 }
 
-function formatMemberIdForDisplay(raw) {
-  const s = String(raw || '')
-  if (s.length !== 10) return s
-  return `${s.slice(0,2)}-${s.slice(2,6)}-${s.slice(6,10)}`
+function formatNexusIdForDisplay(raw) {
+  const s = String(raw || '').replace(/\D/g, '') // Remove non-digit characters
+  if (s.length >= 2) {
+    let formatted = s.slice(0, 2)
+    if (s.length >= 6) {
+      formatted += '-' + s.slice(2, 6)
+      if (s.length >= 10) {
+        formatted += '-' + s.slice(6, 10)
+      }
+    }
+    return formatted
+  }
+  return s
 }
 
 function readStoredUsers() {
@@ -92,8 +101,8 @@ export function AuthProvider({ children }) {
     checkAuth()
   }, [])
 
-  const login = async (memberId, password) => {
-    const normalizedId = String(memberId || '').trim()
+  const login = async (nexusId, password) => {
+    const normalizedId = String(nexusId || '').replace(/\D/g, '') // Remove non-digit characters
     const storedUsers = readStoredUsers()
 
     if (isSupabaseConfigured() && supabase) {
@@ -101,43 +110,43 @@ export function AuthProvider({ children }) {
         const { data, error } = await supabase.from('members').select('*').eq('member_id', normalizedId).maybeSingle()
         if (error) throw error
         if (!data) {
-          throw new Error('Member number not found. Please create an account first.')
+          throw new Error('Nexus number not found. Please create an account first.')
         }
         if (String(password || '').trim() !== String(data.password || '').trim()) {
-          throw new Error('Incorrect password for this member number.')
+          throw new Error('Incorrect password for this Nexus number.')
         }
         const sessionUser = normalizeUser(data)
         if (typeof window !== 'undefined') {
           localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
         }
         setUser(sessionUser)
-        return { user: sessionUser, memberId: sessionUser.memberId }
+        return { user: sessionUser, nexusId: sessionUser.nexusId }
       } catch (err) {
         if (storedUsers.length) {
-          const fallbackUser = storedUsers.find((candidate) => (candidate.member_id || candidate.memberId) === normalizedId)
+          const fallbackUser = storedUsers.find((candidate) => (candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId) === normalizedId)
           if (fallbackUser) {
             if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
-              throw new Error('Incorrect password for this member number.')
+              throw new Error('Incorrect password for this Nexus number.')
             }
             const sessionUser = normalizeUser(fallbackUser)
             localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
             setUser(sessionUser)
-            return { user: sessionUser, memberId: sessionUser.memberId }
+            return { user: sessionUser, nexusId: sessionUser.nexusId }
           }
         }
         throw err
       }
     }
 
-    const fallbackUser = storedUsers.find((candidate) => (candidate.member_id || candidate.memberId) === normalizedId)
-    if (!fallbackUser) throw new Error('Member number not found. Please create an account first.')
+    const fallbackUser = storedUsers.find((candidate) => (candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId) === normalizedId)
+    if (!fallbackUser) throw new Error('Nexus number not found. Please create an account first.')
     if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
-      throw new Error('Incorrect password for this member number.')
+      throw new Error('Incorrect password for this Nexus number.')
     }
     const sessionUser = normalizeUser(fallbackUser)
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
     setUser(sessionUser)
-    return { user: sessionUser, memberId: sessionUser.memberId }
+    return { user: sessionUser, nexusId: sessionUser.nexusId }
   }
 
   const logout = async () => {
@@ -151,15 +160,16 @@ export function AuthProvider({ children }) {
     const normalizedFirstName = String(firstName || '').trim()
     const normalizedLastName = String(lastName || '').trim()
     const storedUsers = readStoredUsers()
-    const memberId = generateMemberId(storedUsers)
-    const generatedPassword = String(password || '').trim() || `${memberId.slice(-4)}${Math.random().toString(36).slice(-4)}`
+    const nexusId = generateNexusId(storedUsers)
+    const generatedPassword = String(password || '').trim() || `${nexusId.slice(-4)}${Math.random().toString(36).slice(-4)}`
     const fullName = [normalizedFirstName, normalizedLastName].filter(Boolean).join(' ').trim()
 
     const newUser = {
       id: `${Date.now()}`,
-      member_id: memberId,
-      memberId,
-      memberIdDisplay: formatMemberIdForDisplay(memberId),
+      member_id: nexusId, // Keep for backwards compatibility
+      nexus_id: nexusId,
+      nexusId,
+      nexusIdDisplay: formatNexusIdForDisplay(nexusId),
       first_name: normalizedFirstName,
       firstName: normalizedFirstName,
       last_name: normalizedLastName,
@@ -177,30 +187,30 @@ export function AuthProvider({ children }) {
         const { data, error } = await supabase.from('members').insert(newUser).select().single()
         if (error) throw error
         const sessionUser = normalizeUser(data || newUser)
-        sessionUser.memberIdDisplay = formatMemberIdForDisplay(sessionUser.memberId)
+        sessionUser.nexusIdDisplay = formatNexusIdForDisplay(sessionUser.nexusId)
         if (typeof window !== 'undefined') {
           localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
         }
         setUser(sessionUser)
-        return { user: sessionUser, memberId, password: generatedPassword }
+        return { user: sessionUser, nexusId, password: generatedPassword }
       } catch {
         const nextUsers = [newUser, ...storedUsers]
         writeStoredUsers(nextUsers)
         const sessionUser = normalizeUser(newUser)
-        sessionUser.memberIdDisplay = formatMemberIdForDisplay(sessionUser.memberId)
+        sessionUser.nexusIdDisplay = formatNexusIdForDisplay(sessionUser.nexusId)
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
         setUser(sessionUser)
-        return { user: sessionUser, memberId, password: generatedPassword }
+        return { user: sessionUser, nexusId, password: generatedPassword }
       }
     }
 
     const nextUsers = [newUser, ...storedUsers]
     writeStoredUsers(nextUsers)
     const sessionUser = normalizeUser(newUser)
-    sessionUser.memberIdDisplay = formatMemberIdForDisplay(sessionUser.memberId)
+    sessionUser.nexusIdDisplay = formatNexusIdForDisplay(sessionUser.nexusId)
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
     setUser(sessionUser)
-    return { user: sessionUser, memberId, password: generatedPassword }
+    return { user: sessionUser, nexusId, password: generatedPassword }
   }
 
   const value = {
@@ -222,4 +232,4 @@ export function useAuth() {
   return useContext(AuthContext)
 }
 
-export { formatMemberIdForDisplay }
+export { formatNexusIdForDisplay }

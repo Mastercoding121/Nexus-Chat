@@ -23,10 +23,8 @@ const features = [
 
 const platforms = [
   { label: 'Android', icon: Smartphone },
-  { label: 'PC', icon: Monitor },
-  { label: 'Tablet', icon: Tablet },
-  { label: 'Mac', icon: Apple },
-  { label: 'iPhone', icon: Smartphone }
+  { label: 'iOS/iPad', icon: Apple },
+  { label: 'Windows/Tablet', icon: Monitor }
 ]
 
 function getThemePreference() {
@@ -124,7 +122,7 @@ export default function AuthLanding() {
                 {typeof navigator !== 'undefined' && (() => {
                   const isAndroidWeb = /Android/i.test(navigator.userAgent) && !(typeof window !== 'undefined' && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform())
                   return isAndroidWeb ? (
-                    <a href="https://nexus-chat-big-hit.vercel.app/app-release.apk" download className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${themeClasses.button}`}>
+                    <a href="https://nexus-chat-sandy-alpha.vercel.app/app-release.apk" download className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition ${themeClasses.button}`}>
                       <Grid2x2 className="h-4 w-4" /> Android app
                     </a>
                   ) : (

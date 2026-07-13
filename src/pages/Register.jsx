@@ -51,11 +51,11 @@ export default function Register() {
       <AuthShell title="Your secure member account is ready" subtitle="Save your member number and password. You will use them to sign in on any device." compact>
         <div className={`flex flex-col rounded-[24px] border p-8 ${theme === 'dark' ? 'border-emerald-500/20 bg-slate-900/60' : 'border-emerald-200 bg-white/80'}`}>
           <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
-            <Sparkles className="h-4 w-4" /> Member created
+            <Sparkles className="h-4 w-4" /> Nexus account created
           </div>
           <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-blue-500/20 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
-            <p className={`text-sm ${themeClasses.muted}`}>Member number</p>
-            <p className="mt-2 text-2xl font-semibold tracking-[0.25em]">{memberDetails.memberIdDisplay || memberDetails.memberId}</p>
+            <p className={`text-sm ${themeClasses.muted}`}>Nexus number</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[0.25em]">{memberDetails.nexusIdDisplay || memberDetails.nexusId}</p>
             <p className={`mt-4 text-sm ${themeClasses.muted}`}>Password</p>
             <p className="mt-2 text-lg font-semibold">{memberDetails.password}</p>
           </div>
@@ -82,7 +82,7 @@ export default function Register() {
         <div className={`flex-1 rounded-[24px] border p-8 ${theme === 'dark' ? 'border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-slate-900' : 'border-blue-200 bg-gradient-to-br from-blue-50 to-white'}`}>
           <div className={`rounded-2xl border p-4 text-sm ${theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-300' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
             • Fast onboarding<br />
-            • Private member number sign-in<br />
+            • Private Nexus number sign-in<br />
             • Syncs into the protected chat experience
           </div>
         </div>

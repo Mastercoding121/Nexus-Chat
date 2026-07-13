@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ShieldCheck } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import AuthShell from '../components/AuthShell'
+import NexusNumberInput from '../components/NexusNumberInput'
 
 export default function Login() {
-  const [memberId, setMemberId] = useState('')
+  const [nexusId, setNexusId] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,7 +36,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const result = await login(memberId, password)
+      const result = await login(nexusId, password)
       const destination = result?.user?.role === 'admin' ? '/admin' : '/app'
       navigate(destination)
     } catch (err) {
@@ -48,7 +49,7 @@ export default function Login() {
   return (
     <AuthShell
       title="Welcome back to Nexus"
-      subtitle="Sign in using your unique 10-digit member number and password. Your session stays locked in until you log out."
+      subtitle="Sign in using your unique 10-digit Nexus number and password. Your session stays locked in until you log out."
       compact
     >
       <div className="flex flex-col gap-8 lg:flex-row">
@@ -64,18 +65,16 @@ export default function Login() {
         </div>
 
         <div className={`w-full max-w-md rounded-[24px] border p-6 shadow-lg ${themeClasses.card}`}>
-          <h2 className="text-2xl font-semibold">Member login</h2>
-          <p className={`mt-2 text-sm ${themeClasses.muted}`}>Use your member number issued during registration.</p>
+          <h2 className="text-2xl font-semibold">Nexus login</h2>
+          <p className={`mt-2 text-sm ${themeClasses.muted}`}>Use your Nexus number issued during registration.</p>
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <div>
-              <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Member number</label>
-              <input
-                type="text"
-                value={memberId}
-                onChange={(e) => setMemberId(e.target.value)}
-                required
+              <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Nexus number</label>
+              <NexusNumberInput
+                value={nexusId}
+                onChange={setNexusId}
                 className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-0 transition ${themeClasses.input}`}
-                placeholder="4829157310"
+                placeholder="10-xxxx-xxxx"
               />
             </div>
             <div>
