@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { SparklesIcon } from '@heroicons/react/24/solid'
 import { useAuth } from '../lib/AuthContext'
 import { useTheme } from '../hooks/useTheme'
 import AuthShell from '../components/AuthShell'
@@ -12,9 +11,8 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [memberDetails, setMemberDetails] = useState(null)
   const { theme } = useTheme()
-  const { register, verifyEmail } = useAuth()
+  const { register } = useAuth()
   const navigate = useNavigate()
 
   const themeClasses = useMemo(() => theme === 'dark'
@@ -39,8 +37,8 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const result = await register({ firstName, lastName, email, password })
-      setMemberDetails(result)
+      await register({ firstName, lastName, email, password })
+      navigate('/app', { replace: true })
     } catch (err) {
       setError(err.message || 'Registration failed')
     } finally {
@@ -48,53 +46,10 @@ export default function Register() {
     }
   }
 
-  if (memberDetails) {
-    return (
-      <AuthShell title="Your secure member account is ready" subtitle="Save your member number and password. You will use them to sign in on any device." compact>
-        <div className={`flex flex-col rounded-[24px] border p-8 ${theme === 'dark' ? 'border-emerald-500/20 bg-slate-900/60' : 'border-emerald-200 bg-white/80'}`}>
-          <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
-            <SparklesIcon className="h-4 w-4" /> Nexus account created
-          </div>
-          <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-blue-500/20 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
-            <p className={`text-sm ${themeClasses.muted}`}>Nexus number</p>
-            <p className="mt-2 text-2xl font-semibold tracking-[0.25em] text-oily-blue">{memberDetails.nexusIdDisplay || memberDetails.nexusId}</p>
-            <p className={`mt-4 text-sm ${themeClasses.muted}`}>Password</p>
-            <p className="mt-2 text-lg font-semibold">{memberDetails.password}</p>
-          </div>
-
-          {/* Email Verification Prompt */}
-          <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-amber-500/20 bg-amber-500/10' : 'border-amber-200 bg-amber-50'}`}>
-            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-amber-200' : 'text-amber-700'}`}>
-              ✨ Verify your email to unlock all features!
-            </p>
-            <p className={`mt-2 text-sm ${themeClasses.muted}`}>
-              We've sent a verification link to <span className="font-medium">{email}</span>. Click the link to complete your setup!
-            </p>
-            <button 
-              onClick={verifyEmail}
-              className={`mt-4 rounded-xl px-4 py-2 text-sm font-semibold transition ${theme === 'dark' ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
-            >
-              Verify email (demo)
-            </button>
-          </div>
-
-          <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => navigate('/app')} className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${themeClasses.button}`}>
-              Open app
-            </button>
-            <Link to="/login" className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${theme === 'dark' ? 'border-white/10 text-slate-200 hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}>
-              Sign in now
-            </Link>
-          </div>
-        </div>
-      </AuthShell>
-    )
-  }
-
   return (
     <AuthShell
       title="Create your secure Nexus account"
-      subtitle="Start with your first and last name. Add a password if you want one, or leave it blank for a generated secure one."
+      subtitle="Start with your first and last name. Add a password if you want one, or leave it blank for a generated secure one. Your Nexus number will be issued in 10-xxxx-xxxx format."
       compact
     >
       <div className="flex flex-col gap-8 lg:flex-row">

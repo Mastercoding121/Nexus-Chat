@@ -65,7 +65,7 @@ export default function ChatLayout() {
               onClick={verifyEmail}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition ${theme === 'dark' ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
             >
-              Verify now (demo)
+              Verify now
             </button>
           </div>
         </div>
