@@ -1,7 +1,8 @@
 import { Apple, ArrowRight, Download, Grid2x2, Mic, Monitor, Moon, Shield, Smartphone, Sparkles, Sun, Tablet, Users } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header'
+import { useTheme } from '../hooks/useTheme'
 
 const features = [
   {
@@ -27,21 +28,8 @@ const platforms = [
   { label: 'Windows/Tablet', icon: Monitor }
 ]
 
-function getThemePreference() {
-  if (typeof window === 'undefined') return 'light'
-  const stored = localStorage.getItem('nexus-theme')
-  return stored || 'light'
-}
-
 export default function AuthLanding() {
-  const [theme, setTheme] = useState('light')
-
-  useEffect(() => {
-    const currentTheme = getThemePreference()
-    setTheme(currentTheme)
-    document.documentElement.classList.toggle('dark', currentTheme === 'dark')
-    document.documentElement.style.colorScheme = currentTheme
-  }, [])
+  const { theme } = useTheme()
 
   const themeClasses = useMemo(() => theme === 'dark'
     ? {
@@ -61,14 +49,6 @@ export default function AuthLanding() {
         secondaryButton: 'border-slate-300 bg-slate-100 text-slate-900 hover:bg-slate-200'
       },
     [theme])
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(nextTheme)
-    localStorage.setItem('nexus-theme', nextTheme)
-    document.documentElement.classList.toggle('dark', nextTheme === 'dark')
-    document.documentElement.style.colorScheme = nextTheme
-  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>

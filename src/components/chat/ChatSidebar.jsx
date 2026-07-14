@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Menu, Search, Plus } from 'lucide-react'
+import { Menu, Search, Plus, Sun, Moon } from 'lucide-react'
 import ChatListItem from './ChatListItem'
 import StoryBar from './StoryBar'
 import { useAuth } from '../../lib/AuthContext'
-import { useSetting } from '../../hooks/useSetting'
+import { useTheme } from '../../hooks/useTheme'
 import { mockChats } from '../../data/mockChats'
 import { createChat, getChats } from '../../lib/persistence'
 
 export default function ChatSidebar({ activeTab, onTabChange }) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [darkMode, setDarkMode] = useSetting('darkMode', false)
+  const { theme, toggleTheme } = useTheme()
   const [showMenu, setShowMenu] = useState(false)
   const [chats, setChats] = useState(mockChats)
   const { logout } = useAuth()
@@ -58,10 +58,10 @@ export default function ChatSidebar({ activeTab, onTabChange }) {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setDarkMode(!darkMode)}
+            onClick={toggleTheme}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            {darkMode ? '☀️' : '🌙'}
+            {theme === 'dark' ? <Sun className="w-5 h-5 text-gray-700 dark:text-gray-300" /> : <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />}
           </button>
           <button
             onClick={handleCreateChat}

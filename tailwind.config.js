@@ -14,6 +14,7 @@ const config = {
         poppins: ['Poppins', 'sans-serif'],
         roboto: ['Roboto', 'sans-serif'],
         'open-sans': ['Open Sans', 'sans-serif'],
+        courier: ['Courier New', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -54,6 +55,12 @@ const config = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+      },
+      textColor: {
+        'font-primary': 'var(--font-color-primary, #1f2937)',
+        'font-secondary': 'var(--font-color-secondary, #4b5563)',
+        'font-accent': 'var(--font-color-accent, #3b82f6)',
+        'font-muted': 'var(--font-color-muted, #9ca3af)',
       },
     },
   },

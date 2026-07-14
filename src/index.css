@@ -33,6 +33,12 @@
     --ring: 213.3 93.9% 67.8%;
 
     --radius: 0.5rem;
+
+    /* Theme-aware font color variables */
+    --font-color-primary: #1f2937; /* Light mode */
+    --font-color-secondary: #4b5563;
+    --font-color-accent: #3b82f6;
+    --font-color-muted: #9ca3af;
   }
 
   .dark {
@@ -63,6 +69,12 @@
     --border: 217.2 32.6% 18%;
     --input: 217.2 32.6% 18%;
     --ring: 213.3 93.9% 67.8%;
+
+    /* Dark mode font color variables */
+    --font-color-primary: #f9fafb;
+    --font-color-secondary: #d1d5db;
+    --font-color-accent: #60a5fa;
+    --font-color-muted: #6b7280;
   }
 }
 
@@ -71,7 +83,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-poppins;
   }
 }
 
@@ -139,6 +151,34 @@
 
 .brand-orbit {
   animation: brand-orbit 4.8s ease-in-out infinite;
+}
+
+@keyframes brand-wiggle {
+  0%, 100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes brand-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.95;
+  }
+}
+
+.brand-wiggle {
+  animation: brand-wiggle 0.8s ease-in-out infinite;
+}
+
+.brand-pulse {
+  animation: brand-pulse 2s ease-in-out infinite;
 }
 
 .float-card {

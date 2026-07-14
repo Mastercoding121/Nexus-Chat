@@ -3,7 +3,7 @@
 ## Overview
 Nexus Chat is a modern messaging and community experience built with React, Vite, Tailwind CSS, and a Supabase-ready persistence layer. The app now combines a polished landing experience, secure member authentication, a protected chat shell, and a private messaging hub.
 
-## Current Status (2026-07-11)
+## Current Status (2026-07-14)
 - ✅ Reworked the app from a mock preview into a branded multi-page experience
 - ✅ Added a public landing page with animated branding, theme switching, and stronger download CTA elements
 - ✅ Implemented polished auth routes for login, registration, password recovery, and reset flows
@@ -19,6 +19,13 @@ Nexus Chat is a modern messaging and community experience built with React, Vite
 - ✅ Switched the landing download area from the old GitHub link to Android/iOS app download CTA buttons
 - ✅ Updated Android download flow to use a hosted APK on Vercel for Android web users
 - ✅ Removed legacy investment page and purged the /invest route from source
+- ✅ Added brand-wiggle and brand-pulse animations for the logo
+- ✅ Fixed conflicting brand-spin class in Header.jsx
+- ✅ Unified theme management system: now using useTheme.js across the entire app
+- ✅ Updated ChatSidebar and ChatLayout to use the unified theme system
+- ✅ Added all requested font families (Poppins, Roboto, Open Sans, Courier New) to Tailwind config
+- ✅ Applied font-poppins as the default body font
+- ✅ Set up theme-aware color system in index.css
 
 ## Main Experience Areas
 - Landing and auth: [src/pages/AuthLanding.jsx](src/pages/AuthLanding.jsx), [src/pages/Login.jsx](src/pages/Login.jsx), [src/pages/Register.jsx](src/pages/Register.jsx), [src/pages/ForgotPassword.jsx](src/pages/ForgotPassword.jsx), [src/pages/ResetPassword.jsx](src/pages/ResetPassword.jsx), [src/components/AuthShell.jsx](src/components/AuthShell.jsx)

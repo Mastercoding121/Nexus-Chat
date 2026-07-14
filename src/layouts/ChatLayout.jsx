@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useSetting } from '../hooks/useSetting'
 import ChatSidebar from '../components/chat/ChatSidebar'
 import BottomNav from '../components/chat/BottomNav'
 import NotificationStack from '../components/chat/NotificationStack'
@@ -9,7 +8,6 @@ import { requestNotificationPermission, showSystemNotification } from '../lib/no
 import { startRealtimeListeners, stopRealtimeListeners } from '../lib/persistence'
 
 export default function ChatLayout() {
-  const [darkMode] = useSetting('darkMode', false)
   const location = useLocation()
   const navigate = useNavigate()
   
@@ -47,7 +45,7 @@ export default function ChatLayout() {
   }
 
   return (
-    <div className={`h-screen flex flex-col ${darkMode ? 'dark' : ''}`}>
+    <div className="h-screen flex flex-col">
       <Header showSignIn={false} />
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar activeTab={getActiveTab()} onTabChange={handleTabChange} />
