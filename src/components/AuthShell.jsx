@@ -1,16 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useTheme } from '../hooks/useTheme'
 import Header from './Header'
 
 export default function AuthShell({ children, title, subtitle, compact = false }) {
-  const [theme, setTheme] = useState('light')
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const stored = localStorage.getItem('nexus-theme') || 'light'
-    setTheme(stored)
-    document.documentElement.classList.toggle('dark', stored === 'dark')
-    document.documentElement.style.colorScheme = stored
-  }, [])
+  const { theme } = useTheme()
 
   const themeClasses = useMemo(() => ({
     muted: theme === 'dark' ? 'text-slate-300' : 'text-slate-600'

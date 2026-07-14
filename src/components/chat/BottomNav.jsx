@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { MessageCircle, Users, User, Settings } from 'lucide-react'
+import { ChatBubbleLeftRightIcon, UserGroupIcon, UserIcon, Cog6ToothIcon } from '@heroicons/react/24/solid'
 
 const TABS = [
-  { id: 'chats', label: 'Chats', icon: MessageCircle, path: '/app' },
-  { id: 'stories', label: 'Stories', icon: User, path: '/app/stories' },
-  { id: 'contacts', label: 'Contacts', icon: Users, path: '/app/contacts' },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/app/settings' },
+  { id: 'chats', label: 'Chats', icon: ChatBubbleLeftRightIcon, path: '/app' },
+  { id: 'stories', label: 'Stories', icon: UserIcon, path: '/app/stories' },
+  { id: 'contacts', label: 'Contacts', icon: UserGroupIcon, path: '/app/contacts' },
+  { id: 'settings', label: 'Settings', icon: Cog6ToothIcon, path: '/app/settings' },
 ]
 
 export default function BottomNav({ activeTab, onTabChange }) {

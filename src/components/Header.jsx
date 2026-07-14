@@ -1,4 +1,4 @@
-import { Apple, ArrowRight, Grid2x2, Moon, Sun, Sparkles, Users } from 'lucide-react'
+import { SunIcon, MoonIcon } from '@heroicons/react/24/solid'
 import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
@@ -41,14 +41,14 @@ export default function Header({ showSignIn = true }) {
           </div>
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-blue-500">Nexus</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-oily-blue text-corel-style">Nexus</p>
           <h1 className="truncate text-sm font-semibold sm:text-base">Privacy-first encrypted messaging</h1>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
         <button onClick={toggleTheme} className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${themeClasses.secondaryButton}`} aria-label="Toggle theme">
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
         </button>
         {!isNative && showSignIn && (
           <Link to="/login" className={`rounded-full px-3 py-2 text-sm font-semibold transition sm:px-4 ${themeClasses.button}`}>

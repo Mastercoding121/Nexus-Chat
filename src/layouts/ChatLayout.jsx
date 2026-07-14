@@ -6,10 +6,14 @@ import NotificationStack from '../components/chat/NotificationStack'
 import Header from '../components/Header'
 import { requestNotificationPermission, showSystemNotification } from '../lib/notifications'
 import { startRealtimeListeners, stopRealtimeListeners } from '../lib/persistence'
+import { useTheme } from '../hooks/useTheme'
+import { useAuth } from '../lib/AuthContext'
 
 export default function ChatLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, verifyEmail } = useAuth()
+  const { theme } = useTheme()
   
   useEffect(() => {
     async function initNotifications() {
@@ -47,6 +51,25 @@ export default function ChatLayout() {
   return (
     <div className="h-screen flex flex-col">
       <Header showSignIn={false} />
+      {/* Email Verification Banner */}
+      {user && !user.emailVerified && (
+        <div className={`border-b px-4 py-3 ${theme === 'dark' ? 'bg-amber-900/30 border-amber-800/50' : 'bg-amber-50 border-amber-200'}`}>
+          <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">✨</span>
+              <p className={`text-sm font-medium ${theme === 'dark' ? 'text-amber-200' : 'text-amber-800'}`}>
+                Verify your email address to unlock all Nexus features!
+              </p>
+            </div>
+            <button
+              onClick={verifyEmail}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition ${theme === 'dark' ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+            >
+              Verify now (demo)
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar activeTab={getActiveTab()} onTabChange={handleTabChange} />
         <div className="flex flex-1 min-w-0 flex-col overflow-hidden">

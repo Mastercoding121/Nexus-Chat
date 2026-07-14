@@ -1,18 +1,20 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Sparkles } from 'lucide-react'
+import { SparklesIcon } from '@heroicons/react/24/solid'
 import { useAuth } from '../lib/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import AuthShell from '../components/AuthShell'
 
 export default function Register() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [memberDetails, setMemberDetails] = useState(null)
-  const [theme, setTheme] = useState('light')
-  const { register } = useAuth()
+  const { theme } = useTheme()
+  const { register, verifyEmail } = useAuth()
   const navigate = useNavigate()
 
   const themeClasses = useMemo(() => theme === 'dark'
@@ -37,7 +39,7 @@ export default function Register() {
     setLoading(true)
 
     try {
-      const result = await register({ firstName, lastName, password })
+      const result = await register({ firstName, lastName, email, password })
       setMemberDetails(result)
     } catch (err) {
       setError(err.message || 'Registration failed')
@@ -51,14 +53,31 @@ export default function Register() {
       <AuthShell title="Your secure member account is ready" subtitle="Save your member number and password. You will use them to sign in on any device." compact>
         <div className={`flex flex-col rounded-[24px] border p-8 ${theme === 'dark' ? 'border-emerald-500/20 bg-slate-900/60' : 'border-emerald-200 bg-white/80'}`}>
           <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
-            <Sparkles className="h-4 w-4" /> Nexus account created
+            <SparklesIcon className="h-4 w-4" /> Nexus account created
           </div>
           <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-blue-500/20 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
             <p className={`text-sm ${themeClasses.muted}`}>Nexus number</p>
-            <p className="mt-2 text-2xl font-semibold tracking-[0.25em]">{memberDetails.nexusIdDisplay || memberDetails.nexusId}</p>
+            <p className="mt-2 text-2xl font-semibold tracking-[0.25em] text-oily-blue">{memberDetails.nexusIdDisplay || memberDetails.nexusId}</p>
             <p className={`mt-4 text-sm ${themeClasses.muted}`}>Password</p>
             <p className="mt-2 text-lg font-semibold">{memberDetails.password}</p>
           </div>
+
+          {/* Email Verification Prompt */}
+          <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-amber-500/20 bg-amber-500/10' : 'border-amber-200 bg-amber-50'}`}>
+            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-amber-200' : 'text-amber-700'}`}>
+              ✨ Verify your email to unlock all features!
+            </p>
+            <p className={`mt-2 text-sm ${themeClasses.muted}`}>
+              We've sent a verification link to <span className="font-medium">{email}</span>. Click the link to complete your setup!
+            </p>
+            <button 
+              onClick={verifyEmail}
+              className={`mt-4 rounded-xl px-4 py-2 text-sm font-semibold transition ${theme === 'dark' ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-amber-600 text-white hover:bg-amber-500'}`}
+            >
+              Verify email (demo)
+            </button>
+          </div>
+
           <div className="mt-8 flex flex-wrap gap-3">
             <button onClick={() => navigate('/app')} className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${themeClasses.button}`}>
               Open app
@@ -114,6 +133,17 @@ export default function Register() {
                   placeholder="Stone"
                 />
               </div>
+            </div>
+            <div>
+              <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Email address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${themeClasses.input}`}
+                placeholder="you@example.com"
+              />
             </div>
             <div>
               <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Password <span className={theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}>(optional)</span></label>

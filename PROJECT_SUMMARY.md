@@ -26,6 +26,11 @@ Nexus Chat is a modern messaging and community experience built with React, Vite
 - ✅ Added all requested font families (Poppins, Roboto, Open Sans, Courier New) to Tailwind config
 - ✅ Applied font-poppins as the default body font
 - ✅ Set up theme-aware color system in index.css
+- ✅ Removed next.config.ts to prevent Vercel from misdetecting project as Next.js
+- ✅ Added nexus-chat-tmp to gitignore
+- ✅ Added "oily blue" gradient style to Nexus wording
+- ✅ Added Corel Draw-style artistic text effects (bold weight, letter spacing, text shadow)
+- ✅ Ensured all components use the unified theme system
 
 ## Main Experience Areas
 - Landing and auth: [src/pages/AuthLanding.jsx](src/pages/AuthLanding.jsx), [src/pages/Login.jsx](src/pages/Login.jsx), [src/pages/Register.jsx](src/pages/Register.jsx), [src/pages/ForgotPassword.jsx](src/pages/ForgotPassword.jsx), [src/pages/ResetPassword.jsx](src/pages/ResetPassword.jsx), [src/components/AuthShell.jsx](src/components/AuthShell.jsx)

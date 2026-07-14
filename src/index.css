@@ -181,6 +181,22 @@
   animation: brand-pulse 2s ease-in-out infinite;
 }
 
+.text-oily-blue {
+  background: linear-gradient(135deg, #0047AB 0%, #0A2463 50%, #1E3A8A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  filter: drop-shadow(1px 1px 0 rgba(30, 58, 138, 0.5));
+}
+
+.text-corel-style {
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
+  -webkit-font-smoothing: antialiased;
+}
+
 .float-card {
   animation: float-up 3.2s ease-in-out infinite;
 }

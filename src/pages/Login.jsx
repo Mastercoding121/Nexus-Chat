@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheckIcon } from '@heroicons/react/24/solid'
 import { useAuth } from '../lib/AuthContext'
+import { useTheme } from '../hooks/useTheme'
 import AuthShell from '../components/AuthShell'
 import NexusNumberInput from '../components/NexusNumberInput'
 
@@ -10,7 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [theme, setTheme] = useState('light')
+  const { theme } = useTheme()
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -59,7 +60,7 @@ export default function Login() {
           </div>
           <div className={`mt-6 rounded-2xl border p-4 text-sm ${theme === 'dark' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
             <div className="flex items-center gap-2 font-semibold">
-              <ShieldCheck className="h-4 w-4" /> Protected by end-to-end encryption
+              <ShieldCheckIcon className="h-4 w-4" /> Protected by end-to-end encryption
             </div>
           </div>
         </div>

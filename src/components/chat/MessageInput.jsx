@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Smile, Paperclip, Mic, Send, Square } from 'lucide-react'
+import { FaceSmileIcon, PaperClipIcon, MicrophoneIcon, PaperAirplaneIcon, StopIcon } from '@heroicons/react/24/solid'
 import StickerPicker from './StickerPicker'
 
 export default function MessageInput({ onSendMessage }) {
@@ -119,7 +119,7 @@ export default function MessageInput({ onSendMessage }) {
             onClick={stopRecording}
             className="p-3 bg-red-600 hover:bg-red-700 rounded-full text-white"
           >
-            <Square className="w-5 h-5" />
+            <StopIcon className="w-5 h-5" />
           </button>
         </div>
       ) : (
@@ -133,7 +133,7 @@ export default function MessageInput({ onSendMessage }) {
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400'
             }`}
           >
-            <Smile className="w-6 h-6" />
+            <FaceSmileIcon className="w-6 h-6" />
           </button>
 
           <button
@@ -141,7 +141,7 @@ export default function MessageInput({ onSendMessage }) {
             onClick={() => fileInputRef.current?.click()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-500 dark:text-gray-400"
           >
-            <Paperclip className="w-6 h-6" />
+            <PaperClipIcon className="w-6 h-6" />
           </button>
           <input
             ref={fileInputRef}
@@ -167,7 +167,7 @@ export default function MessageInput({ onSendMessage }) {
               type="submit"
               className="p-2 bg-blue-600 hover:bg-blue-700 rounded-full text-white"
             >
-              <Send className="w-6 h-6" />
+              <PaperAirplaneIcon className="w-6 h-6" />
             </button>
           ) : (
             <button
@@ -175,7 +175,7 @@ export default function MessageInput({ onSendMessage }) {
               onClick={startRecording}
               className="p-2 bg-blue-600 hover:bg-blue-700 rounded-full text-white"
             >
-              <Mic className="w-6 h-6" />
+              <MicrophoneIcon className="w-6 h-6" />
             </button>
           )}
         </form>

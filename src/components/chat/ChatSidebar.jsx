@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Menu, Search, Plus, Sun, Moon } from 'lucide-react'
+import { Bars3Icon, MagnifyingGlassIcon, PlusIcon, SunIcon, MoonIcon } from '@heroicons/react/24/solid'
 import ChatListItem from './ChatListItem'
 import StoryBar from './StoryBar'
 import { useAuth } from '../../lib/AuthContext'
-import { useTheme } from '../../hooks/useTheme'
 import { mockChats } from '../../data/mockChats'
 import { createChat, getChats } from '../../lib/persistence'
+import { useTheme } from '../../hooks/useTheme'
 
 export default function ChatSidebar({ activeTab, onTabChange }) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -52,7 +52,7 @@ export default function ChatSidebar({ activeTab, onTabChange }) {
             onClick={() => setShowMenu(!showMenu)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+            <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
           </button>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Nexus Chat</h1>
         </div>
@@ -61,13 +61,13 @@ export default function ChatSidebar({ activeTab, onTabChange }) {
             onClick={toggleTheme}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-gray-700 dark:text-gray-300" /> : <Moon className="w-5 h-5 text-gray-700 dark:text-gray-300" />}
+            {theme === 'dark' ? <SunIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" /> : <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />}
           </button>
           <button
             onClick={handleCreateChat}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <Plus className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+            <PlusIcon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
           </button>
         </div>
       </div>
@@ -100,7 +100,7 @@ export default function ChatSidebar({ activeTab, onTabChange }) {
         <>
           <div className="p-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search or start new chat"
