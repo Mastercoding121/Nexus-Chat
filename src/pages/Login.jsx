@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ShieldCheckIcon } from '@heroicons/react/24/solid'
 import { useAuth } from '../lib/AuthContext'
@@ -12,8 +12,14 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { theme } = useTheme()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user) {
+      navigate('/app', { replace: true })
+    }
+  }, [user, navigate])
 
   const themeClasses = useMemo(() => theme === 'dark'
     ? {

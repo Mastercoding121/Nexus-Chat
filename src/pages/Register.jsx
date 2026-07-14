@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { useTheme } from '../hooks/useTheme'
@@ -11,11 +11,15 @@ export default function Register() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [memberDetails, setMemberDetails] = useState(null)
-  const [copied, setCopied] = useState(false)
   const { theme } = useTheme()
-  const { register } = useAuth()
+  const { register, user } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user) {
+      navigate('/app', { replace: true })
+    }
+  }, [user, navigate])
 
   const themeClasses = useMemo(() => theme === 'dark'
     ? {
