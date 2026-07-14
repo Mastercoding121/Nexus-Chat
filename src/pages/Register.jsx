@@ -98,7 +98,7 @@ export default function Register() {
   return (
     <AuthShell
       title="Create your secure Nexus account"
-      subtitle="Start with your first and last name. Add a password if you want one, or leave it blank for a generated secure one. Your Nexus number will be issued in 10-xxxx-xxxx format."
+      subtitle="Start with your first and last name. Add a password if you want one, or leave it blank for a generated secure one. Your Nexus number will be issued as 10-xxxx-xxxx; you’ll enter only the final 8 digits on login."
       compact
     >
       <div className="flex flex-col gap-8 lg:flex-row">

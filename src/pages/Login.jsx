@@ -50,7 +50,7 @@ export default function Login() {
   return (
     <AuthShell
       title="Welcome back to Nexus"
-      subtitle="Sign in using your unique Nexus number and password. The first two digits are fixed as 10-."
+      subtitle="Sign in using your unique Nexus number and password. Enter only the eight digits after the fixed 10- prefix."
       compact
     >
       <div className="flex flex-col gap-8 lg:flex-row">
@@ -75,7 +75,7 @@ export default function Login() {
                 value={nexusId}
                 onChange={setNexusId}
                 className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-0 transition ${themeClasses.input}`}
-                placeholder="10-xxxx-xxxx"
+                placeholder="2345-6789"
               />
             </div>
             <div>
