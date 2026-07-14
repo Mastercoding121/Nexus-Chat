@@ -158,41 +158,9 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const verifyEmail = async () => {
-    if (!user) return
-
-    const storedUsers = readStoredUsers()
-    const updatedUsers = storedUsers.map(u => {
-      if ((u.id === user.id) || (u.nexus_id === user.nexusId) || (u.member_id === user.nexusId)) {
-        return {
-          ...u,
-          email_verified: true,
-          emailVerified: true
-        }
-      }
-      return u
-    })
-
-    writeStoredUsers(updatedUsers)
-
-    const updatedUser = {
-      ...user,
-      email_verified: true,
-      emailVerified: true
-    }
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(updatedUser))
-    }
-
-    setUser(updatedUser)
-    return { user: updatedUser }
-  }
-
-  const register = async ({ firstName, lastName, email, password }) => {
+  const register = async ({ firstName, lastName, password }) => {
     const normalizedFirstName = String(firstName || '').trim()
     const normalizedLastName = String(lastName || '').trim()
-    const normalizedEmail = String(email || '').trim()
     const storedUsers = readStoredUsers()
     const nexusId = generateNexusId(storedUsers)
     const generatedPassword = String(password || '').trim() || `${nexusId.slice(-4)}${Math.random().toString(36).slice(-4)}`
@@ -210,7 +178,7 @@ export function AuthProvider({ children }) {
       lastName: normalizedLastName,
       full_name: fullName,
       fullName,
-      email: normalizedEmail,
+      email: null,
       email_verified: false,
       emailVerified: false,
       role: 'user',
@@ -255,8 +223,7 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
-    register,
-    verifyEmail
+    register
   }
 
   return (

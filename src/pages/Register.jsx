@@ -7,10 +7,11 @@ import AuthShell from '../components/AuthShell'
 export default function Register() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [memberDetails, setMemberDetails] = useState(null)
+  const [copied, setCopied] = useState(false)
   const { theme } = useTheme()
   const { register, user } = useAuth()
   const navigate = useNavigate()
@@ -44,7 +45,7 @@ export default function Register() {
     setCopied(false)
 
     try {
-      const result = await register({ firstName, lastName, email, password })
+      const result = await register({ firstName, lastName, password })
       setMemberDetails(result)
     } catch (err) {
       setError(err.message || 'Registration failed')
@@ -141,17 +142,6 @@ export default function Register() {
                   placeholder="Stone"
                 />
               </div>
-            </div>
-            <div>
-              <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Email address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${themeClasses.input}`}
-                placeholder="you@example.com"
-              />
             </div>
             <div>
               <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Password <span className={theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}>(optional)</span></label>
