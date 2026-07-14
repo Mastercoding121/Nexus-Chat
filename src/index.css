@@ -71,21 +71,8 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', 'Poppins', 'Roboto', 'Open Sans', sans-serif;
+    @apply bg-background text-foreground font-sans;
   }
-}
-
-.font-poppins {
-  font-family: 'Poppins', sans-serif;
-}
-
-.font-roboto {
-  font-family: 'Roboto', sans-serif;
-}
-
-.font-open-sans {
-  font-family: 'Open Sans', sans-serif;
 }
 
 @keyframes brand-spin {

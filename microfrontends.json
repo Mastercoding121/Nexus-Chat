@@ -4,6 +4,9 @@
     "nexus-chat": {
       "development": {
         "fallback": "nexus-chat-sandy-alpha.vercel.app"
+      },
+      "production": {
+        "fallback": "nexus-chat-sandy-alpha.vercel.app"
       }
     }
   }

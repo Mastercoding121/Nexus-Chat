@@ -9,6 +9,12 @@ const config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Poppins', 'Roboto', 'Open Sans', 'sans-serif'],
+        poppins: ['Poppins', 'sans-serif'],
+        roboto: ['Roboto', 'sans-serif'],
+        'open-sans': ['Open Sans', 'sans-serif'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
