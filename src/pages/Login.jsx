@@ -50,7 +50,7 @@ export default function Login() {
   return (
     <AuthShell
       title="Welcome back to Nexus"
-      subtitle="Sign in using your unique 10-digit Nexus number and password. Your session stays locked in until you log out."
+      subtitle="Sign in using your unique Nexus number and password. The first two digits are fixed as 10-."
       compact
     >
       <div className="flex flex-col gap-8 lg:flex-row">
