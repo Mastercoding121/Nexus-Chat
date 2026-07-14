@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./lib/AuthContext.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import AdminGuard from "./components/AdminGuard.jsx";
@@ -51,6 +51,7 @@ function App() {
               </AdminGuard>
             }
           />
+          <Route path="/default-path" element={<Navigate to="/" replace />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </Router>
