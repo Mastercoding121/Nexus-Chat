@@ -41,7 +41,7 @@ export default function Header({ showSignIn = true }) {
           </div>
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-oily-blue text-corel-style">Nexus</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-corel-style">Nexus</p>
           <h1 className="truncate text-sm font-semibold sm:text-base">Privacy-first encrypted messaging</h1>
         </div>
       </div>

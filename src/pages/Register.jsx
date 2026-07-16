@@ -66,7 +66,7 @@ export default function Register() {
           <div className={`mt-6 rounded-2xl border p-5 ${theme === 'dark' ? 'border-blue-500/20 bg-blue-500/10' : 'border-blue-200 bg-blue-50'}`}>
             <p className={`text-sm ${themeClasses.muted}`}>Nexus number</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <p className="text-2xl font-semibold tracking-[0.25em] text-oily-blue">{memberNumber}</p>
+              <p className="text-2xl font-semibold tracking-[0.25em] text-blue-500 dark:text-blue-400">{memberNumber}</p>
               <button
                 type="button"
                 onClick={async () => {
