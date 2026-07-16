@@ -20,7 +20,7 @@ export default function ChatSidebar({ activeTab, onTabChange }) {
   useEffect(() => {
     const refreshChats = async () => {
       const nextChats = await getChats()
-      setChats(nextChats)
+      setChats(Array.isArray(nextChats) ? nextChats : [])
     }
     refreshChats()
     window.addEventListener('nexus-chat:updated', refreshChats)
