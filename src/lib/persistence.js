@@ -1,78 +1,34 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 
 const STORAGE_KEY = 'nexus-chat-state-v1'
+const CONTACTS_STORAGE_KEY = 'nexus-contacts-state-v1'
 
-function createSeedChats() {
-  return [
-    {
-      id: '1',
-      title: 'Alice Smith',
-      type: 'private',
-      avatar_url: null,
-      last_message: 'Hey, how are you?',
-      last_message_time: new Date().toISOString(),
-      unread_count: 2,
-      encrypted: true,
-      messages: [
-        {
-          id: 'seed-1',
-          sender_id: 'other',
-          content: 'Hey! How are you doing?',
-          type: 'text',
-          encrypted: false,
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: 'seed-2',
-          sender_id: 'me',
-          content: 'I\'m doing great, thanks for asking!',
-          type: 'text',
-          encrypted: false,
-          created_at: new Date(Date.now() - 3500000).toISOString(),
-        },
-      ],
-    },
-    {
-      id: '2',
-      title: 'Nexus Team',
-      type: 'group',
-      avatar_url: null,
-      last_message: 'Meeting tomorrow at 10am',
-      last_message_time: new Date(Date.now() - 3600000).toISOString(),
-      unread_count: 0,
-      encrypted: false,
-      messages: [
-        {
-          id: 'seed-3',
-          sender_id: 'other',
-          content: 'Meeting tomorrow at 10am',
-          type: 'text',
-          encrypted: false,
-          created_at: new Date(Date.now() - 3700000).toISOString(),
-        },
-      ],
-    },
-    {
-      id: '3',
-      title: 'Bob Johnson',
-      type: 'private',
-      avatar_url: null,
-      last_message: 'Thanks for the help!',
-      last_message_time: new Date(Date.now() - 7200000).toISOString(),
-      unread_count: 0,
-      encrypted: true,
-      messages: [
-        {
-          id: 'seed-4',
-          sender_id: 'other',
-          content: 'Thanks for the help!',
-          type: 'text',
-          encrypted: false,
-          created_at: new Date(Date.now() - 7200000).toISOString(),
-        },
-      ],
-    },
-  ]
+function readLocalContacts() {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(CONTACTS_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function writeLocalContacts(contacts) {
+  if (typeof window === 'undefined') return contacts
+
+  try {
+    window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts))
+  } catch {
+    // Ignore storage failures
+  }
+
+  return contacts
+}
+
+function notifyContactsUpdate() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('nexus-contacts:updated'))
+  }
 }
 
 function notifyChange() {
@@ -82,20 +38,13 @@ function notifyChange() {
 }
 
 function readLocalChats() {
-  if (typeof window === 'undefined') return createSeedChats()
-
+  if (typeof window === 'undefined') return []
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return createSeedChats()
-
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed
-    if (parsed?.chats) return parsed.chats
+    return raw ? JSON.parse(raw) : []
   } catch {
-    // Fall back to seeded data when storage is unavailable or invalid.
+    return []
   }
-
-  return createSeedChats()
 }
 
 function writeLocalChats(chats) {
@@ -171,12 +120,16 @@ export function stopRealtimeListeners(channel) {
   }
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUUID = (str) => UUID_REGEX.test(str);
+
 export async function readChats() {
+  let supabaseChats = [];
   if (supabase && isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase.from('chats').select('*').order('created_at', { ascending: false })
       if (!error && Array.isArray(data)) {
-        return data.map(chat => ({
+        supabaseChats = data.map(chat => ({
           ...chat,
           id: String(chat.id),
           messages: [],
@@ -187,7 +140,27 @@ export async function readChats() {
     }
   }
 
-  return readLocalChats()
+  const localChats = readLocalChats()
+  
+  // Merge local and supabase chats, preferring local chats to retain messages/unread state
+  const mergedMap = new Map()
+  
+  // Add local chats first
+  localChats.forEach(chat => {
+    mergedMap.set(chat.id, chat)
+  })
+  
+  // Add/merge supabase chats
+  supabaseChats.forEach(chat => {
+    const existing = mergedMap.get(chat.id)
+    mergedMap.set(chat.id, {
+      ...existing,
+      ...chat,
+      messages: existing?.messages || chat.messages || [],
+    })
+  })
+  
+  return Array.from(mergedMap.values())
 }
 
 export async function writeChats(chats) {
@@ -195,12 +168,18 @@ export async function writeChats(chats) {
 
   if (supabase && isSupabaseConfigured()) {
     try {
-      await supabase.from('chats').upsert(localChats.map(chat => ({
-        id: chat.id,
-        title: chat.title,
-        type: chat.type || 'private',
-        created_at: chat.created_at || new Date().toISOString(),
-      })))
+      const chatsToUpsert = localChats
+        .filter(chat => isUUID(chat.id))
+        .map(chat => ({
+          id: chat.id,
+          title: chat.title,
+          type: chat.type || 'private',
+          created_at: chat.created_at || new Date().toISOString(),
+        }))
+
+      if (chatsToUpsert.length > 0) {
+        await supabase.from('chats').upsert(chatsToUpsert)
+      }
     } catch {
       // Keep local storage as the source of truth when Supabase is unavailable.
     }
@@ -303,4 +282,39 @@ export async function createChat(chatData) {
 
   await writeChats([newChat, ...chats])
   return newChat
+}
+
+export async function getContacts() {
+  return readLocalContacts()
+}
+
+export async function addContact(contactData) {
+  const contacts = await getContacts()
+  const newContact = {
+    id: `${Date.now()}`,
+    name: contactData.name,
+    nexusId: contactData.nexusId,
+    avatarUrl: contactData.avatarUrl || null,
+    createdAt: new Date().toISOString(),
+  }
+  const updatedContacts = [newContact, ...contacts]
+  await writeLocalContacts(updatedContacts)
+  notifyContactsUpdate()
+  return newContact
+}
+
+export async function deleteContact(contactId) {
+  const contacts = await getContacts()
+  const updatedContacts = contacts.filter(c => c.id !== contactId)
+  await writeLocalContacts(updatedContacts)
+  notifyContactsUpdate()
+  return updatedContacts
+}
+
+export function formatNexusId(raw) {
+  const digits = raw.replace(/\D/g, '')
+  if (digits.length >= 10) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6, 10)}`
+  }
+  return raw
 }

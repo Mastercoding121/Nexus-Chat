@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Phone, MoreVertical, Lock } from 'lucide-react'
+import { ArrowLeftIcon, PhoneIcon, EllipsisVerticalIcon, LockClosedIcon } from '@heroicons/react/24/solid'
 import Avatar from './Avatar'
 import MessageInput from './MessageInput'
 import MessageBubble from './MessageBubble'
@@ -116,14 +116,14 @@ export default function ChatView({ chat, onBack }) {
             onClick={onBack}
             className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
           </button>
           <Avatar src={chat.avatar_url} alt={chat.title} />
           <div>
             <div className="flex items-center gap-1.5">
-              <h2 className="font-semibold text-gray-900 dark:text-white">{chat.title}</h2>
+              <h2 className="font-bold text-gray-900 dark:text-white">{chat.title}</h2>
               {(chat.encrypted || isE2EEEnabled()) && (
-                <Lock className="w-3.5 h-3.5 text-green-500" title="End-to-end encrypted" />
+                <LockClosedIcon className="w-3.5 h-3.5 text-green-500" title="End-to-end encrypted" />
               )}
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -137,10 +137,10 @@ export default function ChatView({ chat, onBack }) {
             disabled={voiceCall.callState !== 'idle'}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-700 dark:text-gray-300 disabled:opacity-50"
           >
-            <Phone className="w-5 h-5" />
+            <PhoneIcon className="w-5 h-5" />
           </button>
           <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-700 dark:text-gray-300">
-            <MoreVertical className="w-5 h-5" />
+            <EllipsisVerticalIcon className="w-5 h-5" />
           </button>
         </div>
       </div>

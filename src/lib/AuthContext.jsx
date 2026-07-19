@@ -17,6 +17,7 @@ function normalizeUser(user) {
     emailVerified: user.email_verified || user.emailVerified || false,
     role: user.role || user.user_role || user.profile_role || 'user',
     password: user.password,
+    avatarUrl: user.avatar_url || user.avatarUrl || null,
     createdAt: user.created_at || user.createdAt
   }
 }
@@ -218,12 +219,65 @@ export function AuthProvider({ children }) {
     return { user: sessionUser, nexusId, password: generatedPassword }
   }
 
+  const updateProfile = async (updates) => {
+    if (!user) return
+    const updatedUser = {
+      ...user,
+      ...updates
+    }
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(updatedUser))
+    }
+    setUser(updatedUser)
+    
+    const storedUsers = readStoredUsers()
+    const updatedUsers = storedUsers.map(candidate => {
+      const candidateId = candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId
+      if (candidateId === user.nexusId) {
+        return {
+          ...candidate,
+          ...updates
+        }
+      }
+      return candidate
+    })
+    writeStoredUsers(updatedUsers)
+    
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const supabaseUpdates = {}
+        if (updates.firstName !== undefined) {
+          supabaseUpdates.first_name = updates.firstName
+          supabaseUpdates.firstName = updates.firstName
+        }
+        if (updates.lastName !== undefined) {
+          supabaseUpdates.last_name = updates.lastName
+          supabaseUpdates.lastName = updates.lastName
+        }
+        if (updates.fullName !== undefined) {
+          supabaseUpdates.full_name = updates.fullName
+          supabaseUpdates.fullName = updates.fullName
+        }
+        if (updates.avatarUrl !== undefined) {
+          supabaseUpdates.avatar_url = updates.avatarUrl
+          supabaseUpdates.avatarUrl = updates.avatarUrl
+        }
+        
+        await supabase.from('members').update(supabaseUpdates).eq('member_id', user.nexusId)
+      } catch (err) {
+        console.error('Supabase profile update failed', err)
+      }
+    }
+  }
+
   const value = {
     user,
     loading,
     login,
     logout,
-    register
+    register,
+    updateProfile
   }
 
   return (

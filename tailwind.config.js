@@ -10,11 +10,8 @@ const config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Poppins', 'Roboto', 'Open Sans', 'sans-serif'],
-        poppins: ['Poppins', 'sans-serif'],
-        roboto: ['Roboto', 'sans-serif'],
-        'open-sans': ['Open Sans', 'sans-serif'],
-        courier: ['Courier New', 'monospace'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+        mono: ['Consolas', 'Monaco', 'Courier New', 'monospace'],
       },
       borderRadius: {
         lg: "var(--radius)",

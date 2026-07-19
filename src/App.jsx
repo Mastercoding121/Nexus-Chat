@@ -7,7 +7,7 @@ import Home from "./pages/Home.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import ContactsPanel from "./components/chat/ContactsPanel.jsx";
-import StoriesTab from "./components/chat/StoriesTab.jsx";
+import FeedsPage from "./pages/FeedsPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AuthLanding from "./pages/AuthLanding.jsx";
 import Login from "./pages/Login.jsx";
@@ -41,7 +41,7 @@ function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/:section" element={<SettingsPage />} />
             <Route path="contacts" element={<ContactsPanel />} />
-            <Route path="stories" element={<StoriesTab />} />
+            <Route path="feeds" element={<FeedsPage />} />
           </Route>
           <Route
             path="/admin"

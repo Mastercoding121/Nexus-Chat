@@ -1,12 +1,26 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import AuthShell from '../components/AuthShell'
+import { useTheme } from '../hooks/useTheme'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { theme } = useTheme()
+
+  const themeClasses = useMemo(() => theme === 'dark'
+    ? {
+        muted: 'text-slate-300',
+        input: 'border-slate-700 bg-slate-800 text-white focus:border-primary focus:ring-primary',
+        button: 'bg-primary text-white hover:bg-primary/90'
+      }
+    : {
+        muted: 'text-slate-600',
+        input: 'border-slate-300 bg-white text-slate-900 focus:border-primary focus:ring-primary',
+        button: 'bg-primary text-white hover:bg-primary/90'
+      }, [theme])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -30,7 +44,7 @@ export default function ForgotPassword() {
       <div className="mx-auto w-full max-w-md">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>
               Email
             </label>
             <input
@@ -38,26 +52,26 @@ export default function ForgotPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-transparent focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+              className={`w-full rounded-lg border px-4 py-3 text-sm outline-none transition ${themeClasses.input}`}
               placeholder="you@example.com"
             />
           </div>
-          {error && <p className="text-center text-sm text-red-500">{error}</p>}
+          {error && <p className="text-center text-sm text-destructive">{error}</p>}
           {message && <p className="text-center text-sm text-green-500">{message}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400"
+            className={`w-full rounded-lg px-4 py-3 font-semibold transition-colors disabled:cursor-not-allowed ${themeClasses.button} disabled:bg-slate-400`}
           >
             {loading ? 'Sending...' : 'Send Reset Email'}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-          Remember your password?{' '}
-          <Link to="/login" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
-            Log in
-          </Link>
-        </p>
+        <p className={`mt-6 text-center text-sm ${themeClasses.muted}`}>
+            Remember your password?{' '}
+            <Link to="/login" className="font-medium text-primary hover:underline">
+              Log in
+            </Link>
+          </p>
       </div>
     </AuthShell>
   )

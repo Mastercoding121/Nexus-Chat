@@ -4,12 +4,15 @@ import SettingsShell from '../components/chat/settings/SettingsShell'
 import SettingsRow from '../components/chat/settings/SettingsRow'
 import AppearanceSettings from '../components/chat/settings/AppearanceSettings'
 import PrivacySettings from '../components/chat/settings/PrivacySettings'
+import ProfileEdit from '../components/chat/settings/ProfileEdit'
+import Avatar from '../components/chat/Avatar'
+import { useAuth } from '../lib/AuthContext'
 import { ChevronRight, ArrowLeft } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 function SettingsMenu() {
   const navigate = useNavigate()
-  const [darkMode, setDarkMode] = useSetting('darkMode', false)
+  const { user } = useAuth()
 
   const sections = [
     { id: 'appearance', label: 'Appearance', description: 'Wallpaper, theme' },
@@ -18,46 +21,44 @@ function SettingsMenu() {
 
   return (
     <SettingsShell>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Settings</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-6">Settings</h2>
 
-      <SettingsRow label="Dark Mode">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            darkMode ? 'bg-blue-600' : 'bg-gray-300'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-              darkMode ? 'translate-x-6' : 'translate-x-0.5'
-            }`}
-          />
-        </button>
-      </SettingsRow>
+      {/* User Profile Card */}
+      <button 
+        onClick={() => navigate('/app/settings/profile')}
+        className="w-full flex items-center gap-4 p-4 bg-muted/40 hover:bg-muted/75 rounded-2xl border border-border mb-6 transition duration-200"
+      >
+        <Avatar src={user?.avatarUrl} alt={user?.fullName || 'User'} size="lg" />
+        <div className="flex-1 text-left">
+          <h3 className="font-bold text-foreground text-lg leading-tight">{user?.fullName || 'Anonymous User'}</h3>
+          <p className="text-xs text-muted-foreground mt-1">Nexus ID: {user?.nexusIdDisplay || '10-XXXX-XXXX'}</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-muted-foreground" />
+      </button>
 
       <div className="mt-6">
         <button
           onClick={() => navigate('/app/settings/appearance')}
-          className="w-full flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+          className="w-full flex items-center justify-between py-4 border-b border-border hover:bg-muted transition-colors"
         >
           <div className="text-left">
-            <p className="text-gray-900 dark:text-white font-medium">Change Chat Wallpaper</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Pick an open-source wallpaper for your chat view</p>
+            <p className="text-foreground font-medium">Change Chat Wallpaper</p>
+            <p className="text-sm text-muted-foreground">Pick an open-source wallpaper for your chat view</p>
           </div>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
 
         {sections.map(section => (
           <button
             key={section.id}
-            onClick={() => navigate(`/settings/${section.id}`)}
-            className="w-full flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            onClick={() => navigate(`/app/settings/${section.id}`)}
+            className="w-full flex items-center justify-between py-4 border-b border-border hover:bg-muted transition-colors"
           >
             <div className="text-left">
-              <p className="text-gray-900 dark:text-white font-medium">{section.label}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{section.description}</p>
+              <p className="text-foreground font-medium">{section.label}</p>
+              <p className="text-sm text-muted-foreground">{section.description}</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         ))}
       </div>
@@ -72,12 +73,12 @@ function SettingsSubPage({ title, children }) {
     <SettingsShell>
       <button
         onClick={() => navigate('/app/settings')}
-        className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-4 hover:underline"
+        className="flex items-center gap-2 text-primary mb-4 hover:underline"
       >
         <ArrowLeft className="w-4 h-4" />
         Back to Settings
       </button>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">{title}</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-6">{title}</h2>
       {children}
     </SettingsShell>
   )
@@ -87,9 +88,19 @@ export default function SettingsPage() {
   const location = useLocation()
   const subPath = location.pathname.split('/app/settings/')[1]
 
+  if (subPath === 'profile') {
+    return (
+      <div className="flex-1 overflow-y-auto bg-card">
+        <SettingsSubPage title="Profile">
+          <ProfileEdit />
+        </SettingsSubPage>
+      </div>
+    )
+  }
+
   if (subPath === 'appearance') {
     return (
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto bg-card">
         <SettingsSubPage title="Appearance">
           <AppearanceSettings />
         </SettingsSubPage>
@@ -99,7 +110,7 @@ export default function SettingsPage() {
 
   if (subPath === 'privacy') {
     return (
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto bg-card">
         <SettingsSubPage title="Privacy & Security">
           <PrivacySettings />
         </SettingsSubPage>
@@ -108,7 +119,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
+    <div className="flex-1 overflow-y-auto bg-card">
       <SettingsMenu />
     </div>
   )

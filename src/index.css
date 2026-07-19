@@ -3,77 +3,81 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (Zangi-style) */
   :root {
-    --background: 222.2 84% 4.9%;
+    --background: 218 40% 96%; /* #f4f6f9 */
+    --foreground: 220 15% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 20%;
+
+    --primary: 207 100% 50%; /* #0084ff */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 15% 30%;
+
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 40%;
+
+    --accent: 207 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 207 100% 50%;
+
+    --radius: 0.75rem;
+
+    /* Font colors */
+    --font-color-primary: #1f2937;
+    --font-color-secondary: #4b5563;
+    --font-color-accent: #0084ff;
+    --font-color-muted: #9ca3af;
+  }
+
+  /* Dark theme (Telegram-style) */
+  .dark {
+    --background: 210 35% 9%; /* #0e1621 */
     --foreground: 210 40% 98%;
 
-    --card: 222.2 47.4% 11.2%;
+    --card: 210 30% 14%; /* #182533 */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 47.4% 11.2%;
+    --popover: 210 30% 14%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 213.3 93.9% 67.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 208 65% 45%; /* #2b5278 */
+    --primary-foreground: 210 40% 98%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 210 28% 16%; /* #17212b */
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 28% 16%;
+    --muted-foreground: 208 80% 65%; /* #2481cc */
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 208 80% 65%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 213.3 93.9% 67.8%;
+    --border: 210 28% 20%;
+    --input: 210 28% 20%;
+    --ring: 208 80% 65%;
 
     --radius: 0.5rem;
 
-    /* Theme-aware font color variables */
-    --font-color-primary: #1f2937; /* Light mode */
-    --font-color-secondary: #4b5563;
-    --font-color-accent: #3b82f6;
-    --font-color-muted: #9ca3af;
-  }
-
-  .dark {
-    --background: 222.2 84% 6.4%;
-    --foreground: 210 40% 96%;
-
-    --card: 222.2 47.4% 10.8%;
-    --card-foreground: 210 40% 96%;
-
-    --popover: 222.2 47.4% 10.8%;
-    --popover-foreground: 210 40% 96%;
-
-    --primary: 213.3 93.9% 67.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 14.6%;
-    --secondary-foreground: 210 40% 96%;
-
-    --muted: 217.2 32.6% 14.6%;
-    --muted-foreground: 215 20.2% 74%;
-
-    --accent: 217.2 32.6% 15.2%;
-    --accent-foreground: 210 40% 96%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 18%;
-    --input: 217.2 32.6% 18%;
-    --ring: 213.3 93.9% 67.8%;
-
-    /* Dark mode font color variables */
+    /* Font colors */
     --font-color-primary: #f9fafb;
     --font-color-secondary: #d1d5db;
-    --font-color-accent: #60a5fa;
+    --font-color-accent: #2481cc;
     --font-color-muted: #6b7280;
   }
 }
@@ -82,8 +86,16 @@
   * {
     @apply border-border;
   }
+  html,
   body {
-    @apply bg-background text-foreground font-poppins;
+    @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+  html {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  }
+  html.dark {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   }
 }
 
@@ -181,12 +193,7 @@
   animation: brand-pulse 2s ease-in-out infinite;
 }
 
-.text-corel-style {
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.1);
-  -webkit-font-smoothing: antialiased;
-}
+
 
 .float-card {
   animation: float-up 3.2s ease-in-out infinite;

@@ -1,4 +1,4 @@
-import { BellRing } from 'lucide-react'
+import { BellIcon } from '@heroicons/react/24/solid'
 import { useEffect, useState } from 'react'
 
 export default function NotificationStack() {
@@ -46,7 +46,7 @@ export default function NotificationStack() {
                 {notification.avatarUrl ? (
                   <img src={notification.avatarUrl} alt={notification.title} className="h-full w-full object-cover" />
                 ) : (
-                  <BellRing className="h-5 w-5 text-sky-400" />
+                  <BellIcon className="h-5 w-5 text-sky-400" />
                 )}
               </div>
               <div className="min-w-0 flex-1">

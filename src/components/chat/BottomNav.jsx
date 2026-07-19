@@ -3,7 +3,7 @@ import { ChatBubbleLeftRightIcon, UserGroupIcon, UserIcon, Cog6ToothIcon } from 
 
 const TABS = [
   { id: 'chats', label: 'Chats', icon: ChatBubbleLeftRightIcon, path: '/app' },
-  { id: 'stories', label: 'Stories', icon: UserIcon, path: '/app/stories' },
+  { id: 'feeds', label: 'Feeds', icon: UserIcon, path: '/app/feeds' },
   { id: 'contacts', label: 'Contacts', icon: UserGroupIcon, path: '/app/contacts' },
   { id: 'settings', label: 'Settings', icon: Cog6ToothIcon, path: '/app/settings' },
 ]
@@ -17,7 +17,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
   }
 
   return (
-    <div className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div className="sticky bottom-0 z-30 w-full md:hidden border-t border-border bg-card shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
       <div className="flex justify-around">
         {TABS.map(tab => {
           const Icon = tab.icon
@@ -26,8 +26,8 @@ export default function BottomNav({ activeTab, onTabChange }) {
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab)}
-              className={`flex flex-col items-center py-3 px-4 ${
-                isActive ? 'text-blue-600' : 'text-gray-500 dark:text-gray-400'
+              className={`flex flex-col items-center py-3 px-2 flex-1 ${
+                isActive ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
               <Icon className="w-6 h-6" />
@@ -36,6 +36,7 @@ export default function BottomNav({ activeTab, onTabChange }) {
           )
         })}
       </div>
+      <div className="md:hidden h-[env(safe-area-inset-bottom)] bg-card"></div>
     </div>
   )
 }

@@ -14,7 +14,7 @@ export default function ChatListItem({ chat, selected, onClick }) {
       <div className="ml-3 flex-1 min-w-0">
         <div className="flex justify-between items-baseline">
           <div className="flex items-center gap-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white truncate">
               {chat.title}
             </h3>
             {chat.encrypted && (

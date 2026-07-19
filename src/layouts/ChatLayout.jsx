@@ -6,14 +6,12 @@ import NotificationStack from '../components/chat/NotificationStack'
 import Header from '../components/Header'
 import { requestNotificationPermission, showSystemNotification } from '../lib/notifications'
 import { startRealtimeListeners, stopRealtimeListeners } from '../lib/persistence'
-import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../lib/AuthContext'
 
 export default function ChatLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { theme } = useTheme()
   
   useEffect(() => {
     async function initNotifications() {
@@ -34,14 +32,14 @@ export default function ChatLayout() {
   const getActiveTab = () => {
     if (location.pathname.startsWith('/app/settings')) return 'settings'
     if (location.pathname.startsWith('/app/contacts')) return 'contacts'
-    if (location.pathname.startsWith('/app/stories')) return 'stories'
+    if (location.pathname.startsWith('/app/feeds')) return 'feeds'
     return 'chats'
   }
 
   const handleTabChange = (tab) => {
     const routes = {
       chats: '/app',
-      stories: '/app/stories',
+      feeds: '/app/feeds',
       contacts: '/app/contacts',
       settings: '/app/settings',
     }
