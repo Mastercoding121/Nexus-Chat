@@ -18,13 +18,42 @@ import { useAuth } from '../lib/AuthContext';
 import { createChat, getChats, appendMessage, getContacts } from '../lib/persistence';
 import UniversalEmojiPicker from '../components/chat/UniversalEmojiPicker';
 
+const LEGACY_AUTO_COMMENT_TEXT = new Set([
+  "Wow, this is fantastic! Can't wait to try it.",
+  "This UI looks gorgeous, I'm absolutely loving it!",
+  "Exactly what I was looking for! Excellent work.",
+  "Is this going to support cross-platform sync soon?",
+  "Amazing project, keeping an eye on this 🚀",
+  "Agreed, this security aspect is crucial."
+])
+const LEGACY_AUTO_REPLY_TEXT = new Set([
+  'Agreed! Completely support this.',
+  'That is an excellent point.',
+  'I had the exact same thought!',
+  'Haha yes, indeed!',
+  'Thanks for highlighting this.',
+  'Spot on! 🎯'
+])
+
+function removeLegacyAutoResponses(feedState) {
+  return feedState.map(feed => ({
+    ...feed,
+    comments: (feed.comments || [])
+      .filter(comment => !LEGACY_AUTO_COMMENT_TEXT.has(comment.content))
+      .map(comment => ({
+        ...comment,
+        replies: (comment.replies || []).filter(reply => !LEGACY_AUTO_REPLY_TEXT.has(reply.content))
+      }))
+  }))
+}
+
 export default function FeedsPage() {
   const [feeds, setFeeds] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('nexus-feeds-state');
       if (stored) {
         try {
-          return JSON.parse(stored);
+          return removeLegacyAutoResponses(JSON.parse(stored));
         } catch (e) {}
       }
     }
@@ -38,28 +67,9 @@ export default function FeedsPage() {
   const [sharedStatus, setSharedStatus] = useState({});
   const [activeReactCommentId, setActiveReactCommentId] = useState(null);
   const [pickerTarget, setPickerTarget] = useState(null);
+  const [, setTimeTick] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const [typingIndicators, setTypingIndicators] = useState({});
-
-  const mockNames = ['Sarah Jenkins', 'Mike Brody', 'Alex Rivera', 'Jessica Alba', 'Ryan Gosling', 'Emma Watson', 'James Bond'];
-  const simulatedComments = [
-    "Wow, this is fantastic! Can't wait to try it.",
-    "This UI looks gorgeous, I'm absolutely loving it!",
-    "Exactly what I was looking for! Excellent work.",
-    "Is this going to support cross-platform sync soon?",
-    "Amazing project, keeping an eye on this 🚀",
-    "Agreed, this security aspect is crucial."
-  ];
-  const simulatedReplies = [
-    "Agreed! Completely support this.",
-    "That is an excellent point.",
-    "I had the exact same thought!",
-    "Haha yes, indeed!",
-    "Thanks for highlighting this.",
-    "Spot on! 🎯"
-  ];
 
   useEffect(() => {
     const loadContacts = async () => {
@@ -78,6 +88,55 @@ export default function FeedsPage() {
       localStorage.setItem('nexus-feeds-state', JSON.stringify(feeds));
     }
   }, [feeds]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setTimeTick(value => value + 1), 30000)
+    return () => window.clearInterval(intervalId)
+  }, [])
+
+  useEffect(() => {
+    const generateAutoComments = () => {
+      setFeeds(prevFeeds => prevFeeds.map(feed => {
+        const autoCommentCount = feed.comments.filter(comment => comment.isAutoComment).length
+        const topic = feed.content.toLowerCase()
+        let topicComments = ['This is a thoughtful update for the Nexus community.', 'A meaningful point for the Nexus community to keep in view.']
+        if (topic.includes('encrypt') || topic.includes('privacy') || topic.includes('security')) {
+          topicComments = ['The privacy focus here is important. Secure communication should feel simple and dependable.', 'Strong privacy principles make this kind of communication more trustworthy.']
+        } else if (topic.includes('voice') || topic.includes('audio') || topic.includes('call')) {
+          topicComments = ['Voice communication will make conversations feel more natural while keeping the experience connected.', 'This voice feature could make everyday conversations much more expressive.']
+        } else if (topic.includes('group') || topic.includes('event') || topic.includes('friend')) {
+          topicComments = ['This is a useful direction for bringing people together and keeping shared plans organized.', 'Features like this make it easier for friends and groups to stay coordinated.']
+        } else if (topic.includes('design') || topic.includes('ui') || topic.includes('smooth')) {
+          topicComments = ['The emphasis on a smooth, considered interface makes this update especially practical.', 'Small details in the interface can make a daily conversation feel much easier.']
+        } else if (topic.includes('welcome') || topic.includes('live') || topic.includes('launch')) {
+          topicComments = ['A strong foundation for the community. It is exciting to see this experience take shape.', 'This is a promising start for a more connected Nexus community.']
+        }
+
+        return {
+          ...feed,
+          comments: [
+            ...feed.comments,
+            {
+              id: `${feed.id}-auto-${Date.now()}`,
+              userName: 'Nexus Community',
+              userAvatar: null,
+              content: topicComments[autoCommentCount % topicComments.length],
+              createdAt: new Date().toISOString(),
+              isAutoComment: true,
+              likes: 0,
+              likedBy: [],
+              reactions: {},
+              reactedBy: {},
+              replies: []
+            }
+          ]
+        }
+      }))
+    }
+
+    const intervalId = window.setInterval(generateAutoComments, 35000)
+    return () => window.clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     setSharedStatus({});
@@ -224,48 +283,6 @@ export default function FeedsPage() {
       [commentId]: ''
     }));
 
-    // Simulated lively response for replies
-    const randomDelayForTyping = 800 + Math.random() * 800;
-    const responderName = mockNames[Math.floor(Math.random() * mockNames.length)];
-    const responderText = simulatedReplies[Math.floor(Math.random() * simulatedReplies.length)];
-
-    setTimeout(() => {
-      setTypingIndicators(prev => ({ ...prev, [commentId]: responderName }));
-
-      setTimeout(() => {
-        setFeeds(prevFeeds => prevFeeds.map(feed => {
-          if (feed.id === feedId) {
-            return {
-              ...feed,
-              comments: feed.comments.map(comment => {
-                if (comment.id === commentId) {
-                  return {
-                    ...comment,
-                    replies: [
-                      ...(comment.replies || []),
-                      {
-                        id: (Date.now() + 1).toString(),
-                        userName: responderName,
-                        userAvatar: null,
-                        content: responderText,
-                        createdAt: new Date().toISOString()
-                      }
-                    ]
-                  };
-                }
-                return comment;
-              })
-            };
-          }
-          return feed;
-        }));
-        setTypingIndicators(prev => {
-          const copy = { ...prev };
-          delete copy[commentId];
-          return copy;
-        });
-      }, 1200 + Math.random() * 800);
-    }, randomDelayForTyping);
   };
 
   const handleAddComment = (feedId) => {
@@ -301,45 +318,6 @@ export default function FeedsPage() {
       [feedId]: ''
     }));
 
-    // Simulated lively response for comments
-    const randomDelayForTyping = 1000 + Math.random() * 1000;
-    const responderName = mockNames[Math.floor(Math.random() * mockNames.length)];
-    const responderText = simulatedComments[Math.floor(Math.random() * simulatedComments.length)];
-
-    setTimeout(() => {
-      setTypingIndicators(prev => ({ ...prev, [feedId]: responderName }));
-
-      setTimeout(() => {
-        setFeeds(prevFeeds => prevFeeds.map(feed => {
-          if (feed.id === feedId) {
-            return {
-              ...feed,
-              comments: [
-                ...feed.comments,
-                {
-                  id: (Date.now() + 1).toString(),
-                  userName: responderName,
-                  userAvatar: null,
-                  content: responderText,
-                  createdAt: new Date().toISOString(),
-                  likes: 0,
-                  likedBy: [], // Initialize likedBy for new comment
-                  reactions: {},
-                  reactedBy: {}, // Initialize reactedBy for new comment
-                  replies: []
-                }
-              ]
-            };
-          }
-          return feed;
-        }));
-        setTypingIndicators(prev => {
-          const copy = { ...prev };
-          delete copy[feedId];
-          return copy;
-        });
-      }, 1500 + Math.random() * 1000);
-    }, randomDelayForTyping);
   };
 
   return (
@@ -569,17 +547,6 @@ export default function FeedsPage() {
                         )}
 
                         {/* Reply Typing Indicator */}
-                        {typingIndicators[comment.id] && (
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground italic ml-4 pl-4 border-l border-border/80 mt-2 animate-pulse">
-                            <div className="flex gap-0.5">
-                              <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                              <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                              <span className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                            </div>
-                            <span>{typingIndicators[comment.id]} is typing...</span>
-                          </div>
-                        )}
-
                         {/* Reply Input Form */}
                         {activeReplyCommentId === comment.id && (
                           <div className="mt-2.5 ml-4 pl-4 border-l border-border/80 flex gap-2">
@@ -606,16 +573,6 @@ export default function FeedsPage() {
                       </div>
                     </div>
                   ))
-                )}
-                {typingIndicators[activeCommentFeed.id] && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground italic px-2 py-1 animate-pulse">
-                    <div className="flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-                    </div>
-                    <span>{typingIndicators[activeCommentFeed.id]} is typing a comment...</span>
-                  </div>
                 )}
               </div>
 

@@ -212,9 +212,16 @@ export function formatTimeAgo(dateString) {
   const minutes = Math.floor(diff / (1000 * 60));
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  
-  if (minutes < 1) return "Just now";
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+
+  if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m`;
-  if (hours < 24) return `${hours}h`;
-  return `${days}d`;
+  if (hours < 24) return `${hours}hr`;
+  if (days < 7) return `${days}day${days === 1 ? '' : 's'}`;
+  if (days < 30) return `${weeks}week${weeks === 1 ? '' : 's'}`;
+  if (days < 60) return `${months}month${months === 1 ? '' : 's'}`;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}-${month}-${date.getFullYear()}`;
 }
