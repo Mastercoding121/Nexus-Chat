@@ -14,6 +14,13 @@ export default function ContactsPanel() {
   const [matchedMember, setMatchedMember] = useState(null)
   const [lookupLoading, setLookupLoading] = useState(false)
 
+  const formatNexusInput = (value) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10)
+    if (digits.length <= 2) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+  }
+
   useEffect(() => {
     const digits = newContactNexusId.replace(/\D/g, '')
     setMatchedMember(null)
@@ -167,10 +174,10 @@ export default function ContactsPanel() {
                 <input
                   type="text"
                   value={newContactNexusId}
-                  onChange={(e) => setNewContactNexusId(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  onChange={(e) => setNewContactNexusId(formatNexusInput(e.target.value))}
                   inputMode="numeric"
-                  pattern="[0-9]{10}"
-                  maxLength={10}
+                  pattern="10-[0-9]{4}-[0-9]{4}"
+                  maxLength={12}
                   placeholder="1012345678"
                   className="w-full px-4 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   required
