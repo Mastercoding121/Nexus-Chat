@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../../lib/AuthContext'
 import Avatar from '../Avatar'
 import { Camera, Copy, Check, Save } from 'lucide-react'
@@ -11,6 +11,7 @@ export default function ProfileEdit() {
   const [saved, setSaved] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || null)
   const fileInputRef = useRef(null)
+  const nexusId = user?.nexusIdDisplay || user?.nexusId || user?.memberId || '10-XXXX-XXXX'
 
   useEffect(() => {
     if (user) {
@@ -38,11 +39,14 @@ export default function ProfileEdit() {
     }
   }
 
-  const handleCopyNexusId = () => {
-    if (user?.nexusIdDisplay) {
-      navigator.clipboard.writeText(user.nexusIdDisplay)
+  const handleCopyNexusId = async () => {
+    if (nexusId === '10-XXXX-XXXX') return
+    try {
+      await navigator.clipboard.writeText(nexusId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
     }
   }
 
@@ -103,7 +107,7 @@ export default function ProfileEdit() {
         </label>
         <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-xl border border-border">
           <span className="text-foreground font-mono font-medium tracking-wide flex-1">
-            {user?.nexusIdDisplay || '10-XXXX-XXXX'}
+            {nexusId}
           </span>
           <button
             onClick={handleCopyNexusId}
