@@ -23,8 +23,12 @@ function normalizeUser(user) {
   }
 }
 
+function getUserNexusId(user) {
+  return String(user?.nexus_id || user?.nexusId || user?.member_id || user?.memberId || '').replace(/\D/g, '')
+}
+
 function generateNexusId(existingUsers) {
-  const usedIds = new Set(existingUsers.map((user) => user.nexus_id || user.nexusId || user.member_id || user.memberId))
+  const usedIds = new Set(existingUsers.map(getUserNexusId))
   let candidate = ''
   do {
     // Generate 10-digit ID starting with 10 (10-xxxx-xxxx format)
@@ -127,7 +131,7 @@ export function AuthProvider({ children }) {
         return { user: sessionUser, nexusId: sessionUser.nexusId }
       } catch (err) {
         if (storedUsers.length) {
-          const fallbackUser = storedUsers.find((candidate) => (candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId) === normalizedId)
+          const fallbackUser = storedUsers.find((candidate) => getUserNexusId(candidate) === normalizedId)
           if (fallbackUser) {
             if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
               throw new Error('Incorrect password for this Nexus number.')
@@ -142,7 +146,7 @@ export function AuthProvider({ children }) {
       }
     }
 
-    const fallbackUser = storedUsers.find((candidate) => (candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId) === normalizedId)
+    const fallbackUser = storedUsers.find((candidate) => getUserNexusId(candidate) === normalizedId)
     if (!fallbackUser) throw new Error('Nexus number not found. Please create an account first.')
     if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
       throw new Error('Incorrect password for this Nexus number.')
@@ -203,6 +207,8 @@ export function AuthProvider({ children }) {
       emailVerified: false,
       role: 'user',
       password: generatedPassword,
+      avatar_url: null,
+      avatarUrl: null,
       created_at: new Date().toISOString(),
       createdAt: new Date().toISOString()
     }
@@ -217,6 +223,7 @@ export function AuthProvider({ children }) {
           email: newUser.email,
           password: newUser.password,
           role: newUser.role,
+          avatar_url: newUser.avatar_url,
           created_at: newUser.created_at,
         }).select().single()
         if (error) throw error
@@ -261,8 +268,7 @@ export function AuthProvider({ children }) {
     
     const storedUsers = readStoredUsers()
     const updatedUsers = storedUsers.map(candidate => {
-      const candidateId = candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId
-      if (String(candidateId) === String(user.nexusId)) {
+      if (getUserNexusId(candidate) === getUserNexusId(user)) {
         return {
           ...candidate,
           ...updates

@@ -9,6 +9,10 @@ function getContactOwnerKey(ownerId) {
   return String(ownerId || 'anonymous')
 }
 
+function getMemberNexusId(member) {
+  return String(member?.member_id || member?.nexus_id || member?.nexusId || member?.memberId || '').replace(/\D/g, '')
+}
+
 function readLocalContacts(ownerId) {
   if (typeof window === 'undefined') return []
   try {
@@ -340,7 +344,7 @@ export async function findMemberByNexusId(rawNexusId) {
 
   try {
     const users = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]')
-    return users.find((user) => String(user.member_id || user.nexus_id || user.nexusId || '').replace(/\D/g, '') === nexusId) || null
+    return users.find((user) => getMemberNexusId(user) === nexusId) || null
   } catch {
     return null
   }

@@ -8,6 +8,7 @@ create table if not exists members (
   password text not null,
   role text not null default 'user',
   wallet_balance numeric(12, 2) not null default 0,
+  avatar_url text,
   created_at timestamptz default now()
 );
 
