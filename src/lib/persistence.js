@@ -5,21 +5,44 @@ const CONTACTS_STORAGE_KEY = 'nexus-contacts-state-v1'
 const USERS_STORAGE_KEY = 'nexus-chat-users'
 const SUPPORT_MESSAGES_STORAGE_KEY = 'nexus-support-messages-v1'
 
-function readLocalContacts() {
+function getContactOwnerKey(ownerId) {
+  return String(ownerId || 'anonymous')
+}
+
+function readLocalContacts(ownerId) {
   if (typeof window === 'undefined') return []
   try {
     const raw = window.localStorage.getItem(CONTACTS_STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      const migrated = { [getContactOwnerKey(ownerId)]: parsed }
+      window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(migrated))
+      return parsed
+    }
+    const ownerKey = getContactOwnerKey(ownerId)
+    if (parsed[ownerKey]) return parsed[ownerKey]
+    if (ownerKey !== 'anonymous' && parsed.anonymous) {
+      parsed[ownerKey] = parsed.anonymous
+      delete parsed.anonymous
+      window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(parsed))
+      return parsed[ownerKey]
+    }
+    return []
   } catch {
     return []
   }
 }
 
-function writeLocalContacts(contacts) {
+function writeLocalContacts(ownerId, contacts) {
   if (typeof window === 'undefined') return contacts
 
   try {
-    window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts))
+    const raw = window.localStorage.getItem(CONTACTS_STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : {}
+    const contactsByOwner = Array.isArray(parsed) ? { [getContactOwnerKey(ownerId)]: parsed } : parsed
+    contactsByOwner[getContactOwnerKey(ownerId)] = contacts
+    window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contactsByOwner))
   } catch {
     // Ignore storage failures
   }
@@ -286,8 +309,8 @@ export async function createChat(chatData) {
   return newChat
 }
 
-export async function getContacts() {
-  return readLocalContacts()
+export async function getContacts(ownerId) {
+  return readLocalContacts(ownerId)
 }
 
 export async function findMemberByNexusId(rawNexusId) {
@@ -346,8 +369,8 @@ export async function appendSupportMessage(conversationId, message) {
   return supportMessage
 }
 
-export async function addContact(contactData) {
-  const contacts = await getContacts()
+export async function addContact(ownerId, contactData) {
+  const contacts = await getContacts(ownerId)
   const newContact = {
     id: `${Date.now()}`,
     name: contactData.name,
@@ -356,15 +379,15 @@ export async function addContact(contactData) {
     createdAt: new Date().toISOString(),
   }
   const updatedContacts = [newContact, ...contacts]
-  await writeLocalContacts(updatedContacts)
+  await writeLocalContacts(ownerId, updatedContacts)
   notifyContactsUpdate()
   return newContact
 }
 
-export async function deleteContact(contactId) {
-  const contacts = await getContacts()
+export async function deleteContact(ownerId, contactId) {
+  const contacts = await getContacts(ownerId)
   const updatedContacts = contacts.filter(c => c.id !== contactId)
-  await writeLocalContacts(updatedContacts)
+  await writeLocalContacts(ownerId, updatedContacts)
   notifyContactsUpdate()
   return updatedContacts
 }

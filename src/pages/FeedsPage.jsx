@@ -73,7 +73,7 @@ export default function FeedsPage() {
 
   useEffect(() => {
     const loadContacts = async () => {
-      const data = await getContacts();
+      const data = await getContacts(user?.id || user?.nexusId);
       setContacts(data);
     };
     loadContacts();
@@ -81,7 +81,7 @@ export default function FeedsPage() {
     const handleUpdate = () => loadContacts();
     window.addEventListener('nexus-contacts:updated', handleUpdate);
     return () => window.removeEventListener('nexus-contacts:updated', handleUpdate);
-  }, []);
+  }, [user?.id, user?.nexusId]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

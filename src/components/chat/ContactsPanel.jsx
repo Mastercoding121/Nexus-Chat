@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { ChatBubbleLeftIcon, UserGroupIcon, PlusIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/solid'
 import Avatar from './Avatar'
 import { createChat, getChats, getContacts, addContact, deleteContact, findMemberByNexusId, formatNexusId } from '../../lib/persistence'
+import { useAuth } from '../../lib/AuthContext'
 
 export default function ContactsPanel() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [contacts, setContacts] = useState([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [newContactNexusId, setNewContactNexusId] = useState('')
@@ -29,7 +31,7 @@ export default function ContactsPanel() {
 
   useEffect(() => {
     const loadContacts = async () => {
-      const data = await getContacts()
+      const data = await getContacts(user?.id || user?.nexusId)
       setContacts(data)
     }
     loadContacts()
@@ -37,7 +39,7 @@ export default function ContactsPanel() {
     const handleUpdate = () => loadContacts()
     window.addEventListener('nexus-contacts:updated', handleUpdate)
     return () => window.removeEventListener('nexus-contacts:updated', handleUpdate)
-  }, [])
+  }, [user?.id, user?.nexusId])
 
   const handleStartChat = async (contact) => {
     const chats = await getChats()
@@ -58,7 +60,7 @@ export default function ContactsPanel() {
     e.preventDefault()
     if (!matchedMember) return
 
-    await addContact({
+    await addContact(user?.id || user?.nexusId, {
       name: matchedMember.full_name || `${matchedMember.first_name || ''} ${matchedMember.last_name || ''}`.trim(),
       nexusId: formatNexusId(newContactNexusId),
       avatarUrl: matchedMember.avatar_url || matchedMember.avatarUrl || null,
@@ -70,7 +72,7 @@ export default function ContactsPanel() {
 
   const handleDeleteContact = async (contactId) => {
     if (confirm('Are you sure you want to delete this contact?')) {
-      await deleteContact(contactId)
+      await deleteContact(user?.id || user?.nexusId, contactId)
     }
   }
 
