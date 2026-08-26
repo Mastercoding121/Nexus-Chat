@@ -13,6 +13,7 @@ export default function ContactsPanel() {
   const [newContactNexusId, setNewContactNexusId] = useState('')
   const [matchedMember, setMatchedMember] = useState(null)
   const [lookupLoading, setLookupLoading] = useState(false)
+  const nexusDigits = newContactNexusId.replace(/\D/g, '')
 
   const formatNexusInput = (value) => {
     const digits = value.replace(/\D/g, '').slice(0, 10)
@@ -22,19 +23,21 @@ export default function ContactsPanel() {
   }
 
   useEffect(() => {
-    const digits = newContactNexusId.replace(/\D/g, '')
     setMatchedMember(null)
-    if (digits.length !== 10) return undefined
+    if (nexusDigits.length !== 10) {
+      setLookupLoading(false)
+      return undefined
+    }
 
     let active = true
     setLookupLoading(true)
-    findMemberByNexusId(digits).then((member) => {
+    findMemberByNexusId(nexusDigits).then((member) => {
       if (active) setMatchedMember(member)
     }).finally(() => {
       if (active) setLookupLoading(false)
     })
     return () => { active = false }
-  }, [newContactNexusId])
+  }, [nexusDigits])
 
   useEffect(() => {
     const loadContacts = async () => {
@@ -186,7 +189,7 @@ export default function ContactsPanel() {
               </div>
               {lookupLoading && <p className="text-sm text-muted-foreground">Looking up member...</p>}
               {!lookupLoading && matchedMember && <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">{matchedMember.full_name || `${matchedMember.first_name || ''} ${matchedMember.last_name || ''}`.trim()} · {formatNexusId(newContactNexusId)}</p>}
-              {!lookupLoading && newContactNexusId.length === 10 && !matchedMember && <p className="text-sm text-red-500">No member found for this Nexus ID.</p>}
+              {!lookupLoading && nexusDigits.length === 10 && !matchedMember && <p className="text-sm text-red-500">No member found for this Nexus ID.</p>}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
