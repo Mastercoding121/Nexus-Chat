@@ -48,7 +48,7 @@ export default function ChatView({ chat, onBack, currentUserId = 'me', supportCo
     const type = messageData.type || 'text'
     let encrypted = false
 
-    if (isE2EEEnabled() && type === 'text') {
+    if (!supportConversationId && isE2EEEnabled() && type === 'text') {
       const result = await encryptMessage(chat.id, content)
       content = result.content
       encrypted = result.encrypted
@@ -78,7 +78,7 @@ export default function ChatView({ chat, onBack, currentUserId = 'me', supportCo
       : await appendMessage(chat.id, newMessage)
     setMessages(prev => [...prev, savedMessage || newMessage])
 
-    if (chat.id && typeof window !== 'undefined') {
+    if (!supportConversationId && chat.id && typeof window !== 'undefined') {
       try {
         await sendSupabaseMessage(chat.id, {
           ...newMessage,

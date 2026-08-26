@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 export default function AdminLogin() {
   const { adminLogin, user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (user?.role === 'admin' && user.email === 'elonmusklite@gmail.com') navigate('/admin/dashboard', { replace: true })
+    if (user?.role === 'admin' && user.email === 'elonmusklite@gmail.com' && user.adminAuthenticated) navigate('/admin/dashboard', { replace: true })
   }, [user, navigate])
 
   const handleSubmit = async (event) => {
@@ -20,9 +21,9 @@ export default function AdminLogin() {
     setLoading(true)
     try {
       await adminLogin(email, password)
-      navigate('/admin/dashboard', { replace: true })
+      navigate(location.state?.from || '/admin/dashboard', { replace: true })
     } catch (err) {
-      setError(err.message || 'Unable to sign in.')
+      setError(err instanceof Error ? err.message : 'Unable to sign in.')
     } finally {
       setLoading(false)
     }

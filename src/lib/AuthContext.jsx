@@ -16,6 +16,7 @@ function normalizeUser(user) {
     email: user.email,
     emailVerified: user.email_verified || user.emailVerified || false,
     role: user.role || user.user_role || user.profile_role || 'user',
+    adminAuthenticated: Boolean(user.adminAuthenticated),
     password: user.password,
     avatarUrl: user.avatar_url || user.avatarUrl || null,
     createdAt: user.created_at || user.createdAt
@@ -153,15 +154,17 @@ export function AuthProvider({ children }) {
   }
 
   const adminLogin = async (email, password) => {
-    if (String(email || '').trim().toLowerCase() !== 'elonmusklite@gmail.com' || password !== 'Jagaban@1') {
-      throw new Error('Invalid administrator credentials.')
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+    if (normalizedEmail !== 'elonmusklite@gmail.com' || password !== 'Jagaban@1') {
+      throw new Error('Invalid administrator email or password.')
     }
 
     const adminUser = normalizeUser({
       id: 'admin-elonmusklite',
       email: 'elonmusklite@gmail.com',
       full_name: 'Nexus Administrator',
-      role: 'admin'
+      role: 'admin',
+      adminAuthenticated: true
     })
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(adminUser))
     setUser(adminUser)
@@ -206,7 +209,16 @@ export function AuthProvider({ children }) {
 
     if (isSupabaseConfigured() && supabase) {
       try {
-        const { data, error } = await supabase.from('members').insert(newUser).select().single()
+        const { data, error } = await supabase.from('members').insert({
+          member_id: newUser.member_id,
+          first_name: newUser.first_name,
+          last_name: newUser.last_name,
+          full_name: newUser.full_name,
+          email: newUser.email,
+          password: newUser.password,
+          role: newUser.role,
+          created_at: newUser.created_at,
+        }).select().single()
         if (error) throw error
         const sessionUser = normalizeUser(data || newUser)
         sessionUser.nexusIdDisplay = formatNexusIdForDisplay(sessionUser.nexusId)
@@ -250,7 +262,7 @@ export function AuthProvider({ children }) {
     const storedUsers = readStoredUsers()
     const updatedUsers = storedUsers.map(candidate => {
       const candidateId = candidate.nexus_id || candidate.nexusId || candidate.member_id || candidate.memberId
-      if (candidateId === user.nexusId) {
+      if (String(candidateId) === String(user.nexusId)) {
         return {
           ...candidate,
           ...updates
@@ -265,22 +277,19 @@ export function AuthProvider({ children }) {
         const supabaseUpdates = {}
         if (updates.firstName !== undefined) {
           supabaseUpdates.first_name = updates.firstName
-          supabaseUpdates.firstName = updates.firstName
         }
         if (updates.lastName !== undefined) {
           supabaseUpdates.last_name = updates.lastName
-          supabaseUpdates.lastName = updates.lastName
         }
         if (updates.fullName !== undefined) {
           supabaseUpdates.full_name = updates.fullName
-          supabaseUpdates.fullName = updates.fullName
         }
         if (updates.avatarUrl !== undefined) {
           supabaseUpdates.avatar_url = updates.avatarUrl
-          supabaseUpdates.avatarUrl = updates.avatarUrl
         }
         
-        await supabase.from('members').update(supabaseUpdates).eq('member_id', user.nexusId)
+        const { error } = await supabase.from('members').update(supabaseUpdates).eq('member_id', user.nexusId)
+        if (error) throw error
       } catch (err) {
         console.error('Supabase profile update failed', err)
       }

@@ -17,7 +17,7 @@ export default function AdminGuard({ children }) {
     return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />
   }
 
-  if (user.role !== 'admin' || user.email !== 'elonmusklite@gmail.com') {
+  if (user.role !== 'admin' || user.email !== 'elonmusklite@gmail.com' || !user.adminAuthenticated) {
     return <Navigate to="/app" replace />
   }
 

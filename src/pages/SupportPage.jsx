@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import ChatView from '../components/chat/ChatView'
-import { createChat, getChatById, getSupportMessages } from '../lib/persistence'
+import { createChat, getChatById, getSupportMessages, startRealtimeListeners, stopRealtimeListeners } from '../lib/persistence'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 const LOCAL_USERS_KEY = 'nexus-chat-users'
@@ -20,6 +20,12 @@ export default function SupportPage({ adminMode = false }) {
   const [users, setUsers] = useState([])
   const [selectedUser, setSelectedUser] = useState(adminMode ? null : user)
   const [chat, setChat] = useState(null)
+
+  useEffect(() => {
+    if (!adminMode) return undefined
+    const channel = startRealtimeListeners()
+    return () => stopRealtimeListeners(channel)
+  }, [adminMode])
 
   useEffect(() => {
     if (!adminMode) {
@@ -49,6 +55,9 @@ export default function SupportPage({ adminMode = false }) {
       let nextChat = await getChatById(id)
       if (!nextChat) {
         nextChat = await createChat({ id, title: `Nexus Support · ${displayName(selectedUser)}`, type: 'support', avatar_url: selectedUser.avatar_url || selectedUser.avatarUrl || null })
+      }
+      if (!nextChat.avatar_url && (selectedUser.avatar_url || selectedUser.avatarUrl)) {
+        nextChat = { ...nextChat, avatar_url: selectedUser.avatar_url || selectedUser.avatarUrl }
       }
       nextChat = { ...nextChat, messages: await getSupportMessages(id) }
       if (active) setChat(nextChat)

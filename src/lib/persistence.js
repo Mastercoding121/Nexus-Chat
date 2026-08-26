@@ -126,6 +126,14 @@ export function startRealtimeListeners() {
     }
   )
 
+  channel.on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'support_messages' },
+    () => {
+      notifyChange()
+    }
+  )
+
   const chatChanged = async () => {
     await readChats()
     notifyChatUpdate()
@@ -356,9 +364,23 @@ export async function getSupportMessages(conversationId) {
 }
 
 export async function appendSupportMessage(conversationId, message) {
-  const supportMessage = { ...message, conversation_id: conversationId }
+  const supportMessage = {
+    id: message.id || `${Date.now()}`,
+    conversation_id: conversationId,
+    sender_id: String(message.sender_id || 'me'),
+    content: message.content || '',
+    type: message.type || 'text',
+    file_url: message.file_url || null,
+    file_name: message.file_name || null,
+    created_at: message.created_at || new Date().toISOString(),
+  }
   if (supabase && isSupabaseConfigured()) {
-    try { await supabase.from('support_messages').insert(supportMessage) } catch { /* Keep local fallback available. */ }
+    const { id, ...supportMessageData } = supportMessage
+    const { data, error } = await supabase.from('support_messages').insert(supportMessageData).select().single()
+    if (!error && data) {
+      notifyChange()
+      return data
+    }
   }
   try {
     const messages = JSON.parse(window.localStorage.getItem(SUPPORT_MESSAGES_STORAGE_KEY) || '{}')

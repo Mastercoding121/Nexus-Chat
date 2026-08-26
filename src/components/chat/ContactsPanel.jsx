@@ -57,7 +57,7 @@ export default function ContactsPanel() {
       const newChat = await createChat({
         title: contact.name,
         type: 'private',
-        avatar_url: null,
+        avatar_url: contact.avatarUrl || null,
       })
       navigate(`/app/chat/${newChat.id}`)
     }

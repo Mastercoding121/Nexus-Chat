@@ -14,6 +14,7 @@ create table if not exists members (
 alter table members add column if not exists email text;
 alter table members add column if not exists role text not null default 'user';
 alter table members add column if not exists wallet_balance numeric(12, 2) not null default 0;
+alter table members add column if not exists avatar_url text;
 
 create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
