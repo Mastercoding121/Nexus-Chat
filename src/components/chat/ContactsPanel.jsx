@@ -2,14 +2,30 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChatBubbleLeftIcon, UserGroupIcon, PlusIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/solid'
 import Avatar from './Avatar'
-import { createChat, getChats, getContacts, addContact, deleteContact, formatNexusId } from '../../lib/persistence'
+import { createChat, getChats, getContacts, addContact, deleteContact, findMemberByNexusId, formatNexusId } from '../../lib/persistence'
 
 export default function ContactsPanel() {
   const navigate = useNavigate()
   const [contacts, setContacts] = useState([])
   const [showAddModal, setShowAddModal] = useState(false)
-  const [newContactName, setNewContactName] = useState('')
   const [newContactNexusId, setNewContactNexusId] = useState('')
+  const [matchedMember, setMatchedMember] = useState(null)
+  const [lookupLoading, setLookupLoading] = useState(false)
+
+  useEffect(() => {
+    const digits = newContactNexusId.replace(/\D/g, '')
+    setMatchedMember(null)
+    if (digits.length !== 10) return undefined
+
+    let active = true
+    setLookupLoading(true)
+    findMemberByNexusId(digits).then((member) => {
+      if (active) setMatchedMember(member)
+    }).finally(() => {
+      if (active) setLookupLoading(false)
+    })
+    return () => { active = false }
+  }, [newContactNexusId])
 
   useEffect(() => {
     const loadContacts = async () => {
@@ -40,14 +56,15 @@ export default function ContactsPanel() {
 
   const handleAddContact = async (e) => {
     e.preventDefault()
-    if (!newContactName.trim() || !newContactNexusId.trim()) return
+    if (!matchedMember) return
 
     await addContact({
-      name: newContactName.trim(),
+      name: matchedMember.full_name || `${matchedMember.first_name || ''} ${matchedMember.last_name || ''}`.trim(),
       nexusId: formatNexusId(newContactNexusId),
+      avatarUrl: matchedMember.avatar_url || matchedMember.avatarUrl || null,
     })
-    setNewContactName('')
     setNewContactNexusId('')
+    setMatchedMember(null)
     setShowAddModal(false)
   }
 
@@ -144,28 +161,23 @@ export default function ContactsPanel() {
             </div>
             <form onSubmit={handleAddContact} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1">Name</label>
-                <input
-                  type="text"
-                  value={newContactName}
-                  onChange={(e) => setNewContactName(e.target.value)}
-                  placeholder="Enter contact name"
-                  className="w-full px-4 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Nexus ID</label>
                 <input
                   type="text"
                   value={newContactNexusId}
-                  onChange={(e) => setNewContactNexusId(e.target.value)}
-                  placeholder="10-XXXX-XXXX"
+                  onChange={(e) => setNewContactNexusId(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  placeholder="1012345678"
                   className="w-full px-4 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   required
                 />
-                <p className="text-xs text-muted-foreground mt-1">Enter the 10-digit Nexus ID (e.g., 1012345678)</p>
+                <p className="text-xs text-muted-foreground mt-1">Enter the 10-digit Nexus ID. The member name is detected automatically.</p>
               </div>
+              {lookupLoading && <p className="text-sm text-muted-foreground">Looking up member...</p>}
+              {!lookupLoading && matchedMember && <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">{matchedMember.full_name || `${matchedMember.first_name || ''} ${matchedMember.last_name || ''}`.trim()} · {formatNexusId(newContactNexusId)}</p>}
+              {!lookupLoading && newContactNexusId.length === 10 && !matchedMember && <p className="text-sm text-red-500">No member found for this Nexus ID.</p>}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -176,6 +188,7 @@ export default function ContactsPanel() {
                 </button>
                 <button
                   type="submit"
+                  disabled={!matchedMember || lookupLoading}
                   className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition duration-200"
                 >
                   Add Contact

@@ -8,11 +8,11 @@ import { useSetting } from '../../hooks/useSetting'
 import { getWallpaperById } from '../../lib/wallpapers'
 import { encryptMessage, decryptMessage, isE2EEEnabled } from '../../lib/crypto/e2ee'
 import { useVoiceCall } from '../../hooks/useVoiceCall'
-import { appendMessage } from '../../lib/persistence'
+import { appendMessage, appendSupportMessage } from '../../lib/persistence'
 import { sendSupabaseMessage } from '../../lib/supabaseChat'
 import { showIncomingNotification } from '../../lib/notifications'
 
-export default function ChatView({ chat, onBack }) {
+export default function ChatView({ chat, onBack, currentUserId = 'me', supportConversationId }) {
   const [messages, setMessages] = useState(chat?.messages || [])
   const [decryptedMessages, setDecryptedMessages] = useState({})
   const messagesEndRef = useRef(null)
@@ -56,7 +56,7 @@ export default function ChatView({ chat, onBack }) {
 
     const newMessage = {
       id: Date.now().toString(),
-      sender_id: 'me',
+      sender_id: currentUserId,
       content,
       type,
       encrypted,
@@ -73,7 +73,9 @@ export default function ChatView({ chat, onBack }) {
       }))
     }
 
-    const savedMessage = await appendMessage(chat.id, newMessage)
+    const savedMessage = supportConversationId
+      ? await appendSupportMessage(supportConversationId, newMessage)
+      : await appendMessage(chat.id, newMessage)
     setMessages(prev => [...prev, savedMessage || newMessage])
 
     if (chat.id && typeof window !== 'undefined') {
@@ -109,8 +111,8 @@ export default function ChatView({ chat, onBack }) {
     : { background: wallpaper.preview || '#f3f4f6' }
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+    <div className="flex h-full min-h-0 flex-1 flex-col min-w-0">
+      <div className="flex shrink-0 items-center justify-between bg-white px-3 py-2 dark:bg-gray-800 sm:px-4 sm:py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
@@ -145,7 +147,7 @@ export default function ChatView({ chat, onBack }) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 relative" style={wallpaperStyle}>
+      <div className="relative min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:p-4" style={wallpaperStyle}>
         <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/70 pointer-events-none" />
         <div className="relative space-y-4">
           {messages.map(message => (
@@ -157,14 +159,16 @@ export default function ChatView({ chat, onBack }) {
                   ? (decryptedMessages[message.id] || '🔒 Decrypting...')
                   : message.content,
               }}
-              isOwn={message.sender_id === 'me'}
+                isOwn={message.sender_id === currentUserId}
             />
           ))}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      <MessageInput onSendMessage={handleSendMessage} />
+      <div className="shrink-0">
+        <MessageInput onSendMessage={handleSendMessage} />
+      </div>
 
       <VoiceCallOverlay
         chat={chat}

@@ -55,7 +55,7 @@ export default function AdminUsers() {
   return (
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <nav className="mb-8 flex flex-wrap items-center gap-4 text-sm"><Link to="/admin/dashboard" className="text-slate-400 hover:text-white">Dashboard</Link><Link to="/admin/users" className="font-semibold text-blue-400">Users</Link><Link to="/admin/wallet" className="text-slate-400 hover:text-white">Wallet</Link></nav>
+        <nav className="mb-8 flex flex-wrap items-center gap-4 text-sm"><Link to="/admin/dashboard" className="text-slate-400 hover:text-white">Dashboard</Link><Link to="/admin/users" className="font-semibold text-blue-400">Users</Link><Link to="/admin/support" className="text-slate-400 hover:text-white">Support</Link></nav>
         <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
           <form onSubmit={saveUser} className="h-fit rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h1 className="text-xl font-semibold">{form.id ? 'Modify user' : 'Create user'}</h1>

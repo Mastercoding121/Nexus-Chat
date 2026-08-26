@@ -11,7 +11,7 @@ import FeedsPage from "./pages/FeedsPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminUsers from "./pages/AdminUsers.jsx";
-import AdminWallet from "./pages/AdminWallet.jsx";
+import SupportPage from "./pages/SupportPage.jsx";
 import AuthLanding from "./pages/AuthLanding.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -45,6 +45,7 @@ function App() {
             <Route path="settings/:section" element={<SettingsPage />} />
             <Route path="contacts" element={<ContactsPanel />} />
             <Route path="feeds" element={<FeedsPage />} />
+            <Route path="support" element={<SupportPage />} />
           </Route>
           <Route
             path="/admin/login"
@@ -61,7 +62,7 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
-            <Route path="wallet" element={<AdminWallet />} />
+            <Route path="support" element={<SupportPage adminMode />} />
           </Route>
           <Route path="/default-path" element={<Navigate to="/" replace />} />
           <Route path="*" element={<PageNotFound />} />

@@ -38,6 +38,17 @@ function SettingsMenu() {
 
       <div className="mt-6">
         <button
+          onClick={() => navigate('/app/support')}
+          className="w-full flex items-center justify-between py-4 border-b border-border hover:bg-muted transition-colors"
+        >
+          <div className="text-left">
+            <p className="text-foreground font-medium">Contact Support</p>
+            <p className="text-sm text-muted-foreground">Chat directly with the Nexus team</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </button>
+
+        <button
           onClick={() => navigate('/app/settings/appearance')}
           className="w-full flex items-center justify-between py-4 border-b border-border hover:bg-muted transition-colors"
         >

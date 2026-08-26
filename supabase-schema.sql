@@ -49,10 +49,24 @@ create table if not exists messages (
   created_at timestamptz default now()
 );
 
+create table if not exists support_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id text not null,
+  sender_id text not null,
+  content text not null,
+  type text not null default 'text',
+  file_url text,
+  file_name text,
+  created_at timestamptz default now()
+);
+
+create index if not exists support_messages_conversation_idx on support_messages(conversation_id, created_at);
+
 alter table members enable row level security;
 alter table chats enable row level security;
 alter table chat_members enable row level security;
 alter table messages enable row level security;
+alter table support_messages enable row level security;
 
 create policy if not exists "Anyone can create a member account" on members
   for insert with check (true);
@@ -76,3 +90,9 @@ create policy if not exists "Users can view messages in their chats" on messages
 
 create policy if not exists "Users can insert messages" on messages
   for insert with check (sender_id = auth.uid());
+
+create policy if not exists "Support messages can be read" on support_messages
+  for select using (true);
+
+create policy if not exists "Support messages can be sent" on support_messages
+  for insert with check (true);

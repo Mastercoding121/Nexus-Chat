@@ -2,6 +2,8 @@ import { supabase, isSupabaseConfigured } from './supabase'
 
 const STORAGE_KEY = 'nexus-chat-state-v1'
 const CONTACTS_STORAGE_KEY = 'nexus-contacts-state-v1'
+const USERS_STORAGE_KEY = 'nexus-chat-users'
+const SUPPORT_MESSAGES_STORAGE_KEY = 'nexus-support-messages-v1'
 
 function readLocalContacts() {
   if (typeof window === 'undefined') return []
@@ -269,7 +271,7 @@ export async function getChatById(chatId) {
 export async function createChat(chatData) {
   const chats = await getChats()
   const newChat = {
-    id: `${Date.now()}`,
+    id: chatData.id || `${Date.now()}`,
     title: chatData.title || 'New Chat',
     type: chatData.type || 'private',
     avatar_url: chatData.avatar_url || null,
@@ -286,6 +288,62 @@ export async function createChat(chatData) {
 
 export async function getContacts() {
   return readLocalContacts()
+}
+
+export async function findMemberByNexusId(rawNexusId) {
+  const nexusId = String(rawNexusId || '').replace(/\D/g, '')
+  if (!nexusId) return null
+
+  if (supabase && isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('id, member_id, full_name, first_name, last_name, avatar_url')
+        .eq('member_id', nexusId)
+        .maybeSingle()
+      if (!error && data) return data
+    } catch {
+      // Fall back to local users when Supabase is unavailable.
+    }
+  }
+
+  try {
+    const users = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]')
+    return users.find((user) => String(user.member_id || user.nexus_id || user.nexusId || '').replace(/\D/g, '') === nexusId) || null
+  } catch {
+    return null
+  }
+}
+
+export async function getSupportMessages(conversationId) {
+  if (supabase && isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase.from('support_messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true })
+      if (!error && data) return data
+    } catch {
+      // Fall back to local support history.
+    }
+  }
+  try {
+    const messages = JSON.parse(window.localStorage.getItem(SUPPORT_MESSAGES_STORAGE_KEY) || '{}')
+    return messages[conversationId] || []
+  } catch {
+    return []
+  }
+}
+
+export async function appendSupportMessage(conversationId, message) {
+  const supportMessage = { ...message, conversation_id: conversationId }
+  if (supabase && isSupabaseConfigured()) {
+    try { await supabase.from('support_messages').insert(supportMessage) } catch { /* Keep local fallback available. */ }
+  }
+  try {
+    const messages = JSON.parse(window.localStorage.getItem(SUPPORT_MESSAGES_STORAGE_KEY) || '{}')
+    messages[conversationId] = [...(messages[conversationId] || []), supportMessage]
+    window.localStorage.setItem(SUPPORT_MESSAGES_STORAGE_KEY, JSON.stringify(messages))
+  } catch { /* Ignore storage failures. */ }
+  notifyChange()
+  return supportMessage
 }
 
 export async function addContact(contactData) {
