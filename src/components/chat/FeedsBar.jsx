@@ -2,14 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Avatar from './Avatar';
 import { UserIcon } from '@heroicons/react/24/solid';
-import { getFeeds } from '../../data/mockFeeds';
+import { getFeeds } from '../../lib/feeds';
 
 export default function FeedsBar() {
-  const [feeds, setFeeds] = useState(getFeeds());
+  const [feeds, setFeeds] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setFeeds(getFeeds());
+    getFeeds().then(setFeeds).catch(() => setFeeds([]));
   }, []);
 
   return (
@@ -24,7 +24,6 @@ export default function FeedsBar() {
         </button>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {/* Recent Feeds Previews */}
         {feeds.slice(0, 5).map(feed => (
           <button 
             key={feed.id} 
@@ -46,6 +45,7 @@ export default function FeedsBar() {
             </span>
           </button>
         ))}
+        {feeds.length === 0 && <p className="text-sm text-muted-foreground">No recent community posts</p>}
       </div>
     </div>
   );

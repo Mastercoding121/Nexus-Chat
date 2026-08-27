@@ -45,6 +45,42 @@ from profiles p
 where m.profile_id is null and m.email is not null and lower(m.email) = lower(p.email);
 create index if not exists members_profile_id_idx on members(profile_id);
 
+create table if not exists feed_posts (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid references profiles(id) on delete set null,
+  user_name text,
+  user_avatar text,
+  content text not null,
+  type text not null default 'text',
+  status text not null default 'active',
+  is_admin_post boolean not null default false,
+  likes integer not null default 0,
+  comments jsonb not null default '[]'::jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists feed_posts_status_created_idx on feed_posts(status, created_at desc);
+alter table feed_posts enable row level security;
+drop policy if exists "Active feed posts are publicly readable" on feed_posts;
+create policy "Active feed posts are publicly readable" on feed_posts
+  for select to anon, authenticated using (status = 'active');
+grant select on table public.feed_posts to anon, authenticated;
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'feed_posts'
+  ) then
+    alter publication supabase_realtime add table public.feed_posts;
+  end if;
+exception
+  when undefined_object then null;
+end;
+$$;
+
 create or replace function public.search_member_by_nexus_id(search_nexus_id text)
 returns table (
   id uuid,
@@ -130,31 +166,31 @@ drop policy if exists "Members can view their own account" on members;
 drop policy if exists "Users can search members by nexus_id" on members;
 
 revoke select on table members from anon, authenticated;
-revoke execute on function public.search_member_by_nexus_id(text) from public, anon;
-grant execute on function public.search_member_by_nexus_id(text) to authenticated;
+revoke execute on function public.search_member_by_nexus_id(text) from public;
+grant execute on function public.search_member_by_nexus_id(text) to anon, authenticated;
 grant select on table public.profiles to postgres;
 
 drop policy if exists "Users can view their own chats" on chats;
 create policy "Users can view their own chats" on chats
-  for select using (owner_id = auth.uid());
+  for select using (owner_id = (select auth.uid()));
 
 drop policy if exists "Users can insert their own chats" on chats;
 create policy "Users can insert their own chats" on chats
-  for insert with check (owner_id = auth.uid());
+  for insert with check (owner_id = (select auth.uid()));
 
 drop policy if exists "Users can view chat members" on chat_members;
 create policy "Users can view chat members" on chat_members
-  for select using (profile_id = auth.uid());
+  for select using (profile_id = (select auth.uid()));
 
 drop policy if exists "Users can view messages in their chats" on messages;
 create policy "Users can view messages in their chats" on messages
   for select using (exists (
-    select 1 from chats c where c.id = messages.chat_id and c.owner_id = auth.uid()
+    select 1 from chats c where c.id = messages.chat_id and c.owner_id = (select auth.uid())
   ));
 
 drop policy if exists "Users can insert messages" on messages;
 create policy "Users can insert messages" on messages
-  for insert with check (sender_id = auth.uid());
+  for insert with check (sender_id = (select auth.uid()));
 
 drop policy if exists "Support messages can be read" on support_messages;
 create policy "Support messages can be read" on support_messages

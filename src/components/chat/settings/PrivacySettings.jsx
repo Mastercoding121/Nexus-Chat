@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../../../lib/AuthContext'
 import SettingsRow from './SettingsRow'
 import { ShieldCheckIcon, KeyIcon, DocumentDuplicateIcon, CheckIcon } from '@heroicons/react/24/solid'
 import {
@@ -13,7 +14,8 @@ export default function PrivacySettings() {
   const [e2eeEnabled, setE2ee] = useState(isE2EEEnabled())
   const [publicKey, setPublicKey] = useState('')
   const [copied, setCopied] = useState(false)
-  const [securityCode] = useState(() => generateSecurityCode('demo-chat'))
+  const { user } = useAuth()
+  const [securityCode] = useState(() => generateSecurityCode(user?.nexusId || user?.id || 'account'))
 
   useEffect(() => {
     initializeE2EE().then(() => getMyPublicKey()).then(setPublicKey)

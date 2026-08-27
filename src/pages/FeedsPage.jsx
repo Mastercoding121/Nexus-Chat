@@ -13,52 +13,13 @@ import {
 } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline';
 import Avatar from '../components/chat/Avatar';
-import { getFeeds, formatTimeAgo } from '../data/mockFeeds';
+import { getFeeds, formatTimeAgo, subscribeToFeeds, unsubscribeFromFeeds } from '../lib/feeds';
 import { useAuth } from '../lib/AuthContext';
 import { createChat, getChats, appendMessage, getContacts } from '../lib/persistence';
 import UniversalEmojiPicker from '../components/chat/UniversalEmojiPicker';
 
-const LEGACY_AUTO_COMMENT_TEXT = new Set([
-  "Wow, this is fantastic! Can't wait to try it.",
-  "This UI looks gorgeous, I'm absolutely loving it!",
-  "Exactly what I was looking for! Excellent work.",
-  "Is this going to support cross-platform sync soon?",
-  "Amazing project, keeping an eye on this 🚀",
-  "Agreed, this security aspect is crucial."
-])
-const LEGACY_AUTO_REPLY_TEXT = new Set([
-  'Agreed! Completely support this.',
-  'That is an excellent point.',
-  'I had the exact same thought!',
-  'Haha yes, indeed!',
-  'Thanks for highlighting this.',
-  'Spot on! 🎯'
-])
-
-function removeLegacyAutoResponses(feedState) {
-  return feedState.map(feed => ({
-    ...feed,
-    comments: (feed.comments || [])
-      .filter(comment => !LEGACY_AUTO_COMMENT_TEXT.has(comment.content))
-      .map(comment => ({
-        ...comment,
-        replies: (comment.replies || []).filter(reply => !LEGACY_AUTO_REPLY_TEXT.has(reply.content))
-      }))
-  }))
-}
-
 export default function FeedsPage() {
-  const [feeds, setFeeds] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('nexus-feeds-state');
-      if (stored) {
-        try {
-          return removeLegacyAutoResponses(JSON.parse(stored));
-        } catch (e) {}
-      }
-    }
-    return getFeeds();
-  });
+  const [feeds, setFeeds] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [activeCommentFeedId, setActiveCommentFeedId] = useState(null);
   const [activeShareFeedId, setActiveShareFeedId] = useState(null);
@@ -84,57 +45,25 @@ export default function FeedsPage() {
   }, [user?.id, user?.nexusId]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('nexus-feeds-state', JSON.stringify(feeds));
+    let active = true
+    const loadFeeds = async () => {
+      try {
+        const nextFeeds = await getFeeds()
+        if (active) setFeeds(nextFeeds)
+      } catch {
+        if (active) setFeeds([])
+      }
     }
-  }, [feeds]);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => setTimeTick(value => value + 1), 30000)
-    return () => window.clearInterval(intervalId)
+    loadFeeds()
+    const channel = subscribeToFeeds(loadFeeds)
+    return () => {
+      active = false
+      unsubscribeFromFeeds(channel)
+    }
   }, [])
 
   useEffect(() => {
-    const generateAutoComments = () => {
-      setFeeds(prevFeeds => prevFeeds.map(feed => {
-        const autoCommentCount = feed.comments.filter(comment => comment.isAutoComment).length
-        const topic = feed.content.toLowerCase()
-        let topicComments = ['This is a thoughtful update for the Nexus community.', 'A meaningful point for the Nexus community to keep in view.']
-        if (topic.includes('encrypt') || topic.includes('privacy') || topic.includes('security')) {
-          topicComments = ['The privacy focus here is important. Secure communication should feel simple and dependable.', 'Strong privacy principles make this kind of communication more trustworthy.']
-        } else if (topic.includes('voice') || topic.includes('audio') || topic.includes('call')) {
-          topicComments = ['Voice communication will make conversations feel more natural while keeping the experience connected.', 'This voice feature could make everyday conversations much more expressive.']
-        } else if (topic.includes('group') || topic.includes('event') || topic.includes('friend')) {
-          topicComments = ['This is a useful direction for bringing people together and keeping shared plans organized.', 'Features like this make it easier for friends and groups to stay coordinated.']
-        } else if (topic.includes('design') || topic.includes('ui') || topic.includes('smooth')) {
-          topicComments = ['The emphasis on a smooth, considered interface makes this update especially practical.', 'Small details in the interface can make a daily conversation feel much easier.']
-        } else if (topic.includes('welcome') || topic.includes('live') || topic.includes('launch')) {
-          topicComments = ['A strong foundation for the community. It is exciting to see this experience take shape.', 'This is a promising start for a more connected Nexus community.']
-        }
-
-        return {
-          ...feed,
-          comments: [
-            ...feed.comments,
-            {
-              id: `${feed.id}-auto-${Date.now()}`,
-              userName: 'Nexus Community',
-              userAvatar: null,
-              content: topicComments[autoCommentCount % topicComments.length],
-              createdAt: new Date().toISOString(),
-              isAutoComment: true,
-              likes: 0,
-              likedBy: [],
-              reactions: {},
-              reactedBy: {},
-              replies: []
-            }
-          ]
-        }
-      }))
-    }
-
-    const intervalId = window.setInterval(generateAutoComments, 35000)
+    const intervalId = window.setInterval(() => setTimeTick(value => value + 1), 30000)
     return () => window.clearInterval(intervalId)
   }, [])
 
@@ -332,6 +261,12 @@ export default function FeedsPage() {
       
       {/* Feed Posts */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-2xl mx-auto w-full">
+        {feeds.length === 0 && (
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <p className="font-medium text-foreground">No feed posts yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Posts from your Nexus community will appear here.</p>
+          </div>
+        )}
         {feeds.map(feed => (
           <div 
             key={feed.id} 

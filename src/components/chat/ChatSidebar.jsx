@@ -3,12 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { MagnifyingGlassIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/solid'
 import ChatListItem from './ChatListItem'
 import { useAuth } from '../../lib/AuthContext'
-import { mockChats } from '../../data/mockChats'
 import { createChat, getChats } from '../../lib/persistence'
 
 export default function ChatSidebar({ activeTab, onTabChange }) {
   const [searchQuery, setSearchQuery] = useState('')
-  const [chats, setChats] = useState(mockChats)
+  const [chats, setChats] = useState([])
   const { logout } = useAuth()
   const navigate = useNavigate()
   const { chatId } = useParams()

@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ChatView from '../components/chat/ChatView'
-import { getChatById } from '../data/mockChats'
+import { getChatById } from '../lib/persistence'
 
 export default function ChatPage() {
   const { chatId } = useParams()
