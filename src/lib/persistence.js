@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { getMemberNexusId, parseNexusId } from '../utils/nexusId'
 
 const STORAGE_KEY = 'nexus-chat-state-v1'
 const CONTACTS_STORAGE_KEY = 'nexus-contacts-state-v1'
@@ -7,10 +8,6 @@ const SUPPORT_MESSAGES_STORAGE_KEY = 'nexus-support-messages-v1'
 
 function getContactOwnerKey(ownerId) {
   return String(ownerId || 'anonymous')
-}
-
-function getMemberNexusId(member) {
-  return String(member?.member_id || member?.nexus_id || member?.nexusId || member?.memberId || '').replace(/\D/g, '')
 }
 
 function readLocalContacts(ownerId) {
@@ -325,18 +322,29 @@ export async function getContacts(ownerId) {
   return readLocalContacts(ownerId)
 }
 
-export async function findMemberByNexusId(rawNexusId) {
-  const nexusId = String(rawNexusId || '').replace(/\D/g, '')
-  if (!nexusId) return null
+export async function findMemberByNexusId(rawNexusId, currentUser) {
+  const parsed = parseNexusId(rawNexusId)
+  if (parsed.status !== 'exact_match') return { status: parsed.status, member: null, nexusId: parsed.value }
+  const nexusId = parsed.value
+  const currentUserId = getMemberNexusId(currentUser)
+  if (currentUserId === nexusId) return { status: 'self_match', member: null, nexusId }
 
   if (supabase && isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
-        .from('members')
-        .select('id, member_id, full_name, first_name, last_name, avatar_url')
-        .eq('member_id', nexusId)
+        .schema('private')
+        .rpc('search_member_by_nexus_id', { search_nexus_id: nexusId })
         .maybeSingle()
-      if (!error && data) return data
+      if (!error && data) {
+        return {
+          status: 'exact_match',
+          member: {
+            ...data,
+            profile: data.profile_id ? { id: data.profile_id, email: data.profile_email } : null,
+          },
+          nexusId,
+        }
+      }
     } catch {
       // Fall back to local users when Supabase is unavailable.
     }
@@ -344,9 +352,12 @@ export async function findMemberByNexusId(rawNexusId) {
 
   try {
     const users = JSON.parse(window.localStorage.getItem(USERS_STORAGE_KEY) || '[]')
-    return users.find((user) => getMemberNexusId(user) === nexusId) || null
+    const member = users.find((user) => getMemberNexusId(user) === nexusId)
+    if (!member) return { status: 'not_found', member: null, nexusId }
+    if (member.is_active === false || member.isActive === false) return { status: 'inactive', member: null, nexusId }
+    return { status: 'exact_match', member, nexusId }
   } catch {
-    return null
+    return { status: 'not_found', member: null, nexusId }
   }
 }
 

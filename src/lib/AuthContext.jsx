@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase, isSupabaseConfigured } from './supabase'
+import { normalizeNexusId } from '../utils/nexusId'
 
 const AuthContext = createContext()
 const SESSION_STORAGE_KEY = 'nexus-chat-session'
@@ -110,16 +111,23 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = async (nexusId, password) => {
-    const normalizedId = String(nexusId || '').replace(/\D/g, '') // Remove non-digit characters
+    const normalizedId = normalizeNexusId(nexusId)
+    if (!normalizedId) throw new Error('Enter a valid 10-digit Nexus number.')
     const storedUsers = readStoredUsers()
 
     if (isSupabaseConfigured() && supabase) {
       try {
-        const { data, error } = await supabase.from('members').select('*').eq('member_id', normalizedId).maybeSingle()
+        let { data, error } = await supabase.from('members').select('*').eq('nexus_id', normalizedId).maybeSingle()
+        if (!data && !error) {
+          const legacyResult = await supabase.from('members').select('*').eq('member_id', normalizedId).maybeSingle()
+          data = legacyResult.data
+          error = legacyResult.error
+        }
         if (error) throw error
         if (!data) {
           throw new Error('Nexus number not found. Please create an account first.')
         }
+        if (data.is_active === false) throw new Error('This Nexus account is inactive.')
         if (String(password || '').trim() !== String(data.password || '').trim()) {
           throw new Error('Incorrect password for this Nexus number.')
         }
@@ -133,6 +141,9 @@ export function AuthProvider({ children }) {
         if (storedUsers.length) {
           const fallbackUser = storedUsers.find((candidate) => getUserNexusId(candidate) === normalizedId)
           if (fallbackUser) {
+            if (fallbackUser.is_active === false || fallbackUser.isActive === false) {
+              throw new Error('This Nexus account is inactive.')
+            }
             if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
               throw new Error('Incorrect password for this Nexus number.')
             }
@@ -148,6 +159,7 @@ export function AuthProvider({ children }) {
 
     const fallbackUser = storedUsers.find((candidate) => getUserNexusId(candidate) === normalizedId)
     if (!fallbackUser) throw new Error('Nexus number not found. Please create an account first.')
+    if (fallbackUser.is_active === false || fallbackUser.isActive === false) throw new Error('This Nexus account is inactive.')
     if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
       throw new Error('Incorrect password for this Nexus number.')
     }
@@ -217,6 +229,7 @@ export function AuthProvider({ children }) {
       try {
         const { data, error } = await supabase.from('members').insert({
           member_id: newUser.member_id,
+          nexus_id: newUser.nexus_id,
           first_name: newUser.first_name,
           last_name: newUser.last_name,
           full_name: newUser.full_name,

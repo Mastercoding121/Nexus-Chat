@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChatBubbleLeftIcon, UserGroupIcon, PlusIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/solid'
 import Avatar from './Avatar'
 import { createChat, getChats, getContacts, addContact, deleteContact, findMemberByNexusId, formatNexusId } from '../../lib/persistence'
+import { formatNexusId as formatCanonicalNexusId, parseNexusId } from '../../utils/nexusId'
 import { useAuth } from '../../lib/AuthContext'
 
 export default function ContactsPanel() {
@@ -11,33 +12,32 @@ export default function ContactsPanel() {
   const [contacts, setContacts] = useState([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [newContactNexusId, setNewContactNexusId] = useState('')
-  const [matchedMember, setMatchedMember] = useState(null)
+  const [lookupResult, setLookupResult] = useState({ status: 'partial_match', member: null })
   const [lookupLoading, setLookupLoading] = useState(false)
-  const nexusDigits = newContactNexusId.replace(/\D/g, '')
+  const parsedNexusId = parseNexusId(newContactNexusId)
 
   const formatNexusInput = (value) => {
-    const digits = value.replace(/\D/g, '').slice(0, 10)
-    if (digits.length <= 2) return digits
-    if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`
-    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
+    const parsed = parseNexusId(value)
+    if (parsed.status === 'invalid') return value.slice(0, 20)
+    return formatCanonicalNexusId(parsed.value || value)
   }
 
   useEffect(() => {
-    setMatchedMember(null)
-    if (nexusDigits.length !== 10) {
+    setLookupResult({ status: parsedNexusId.status, member: null, nexusId: parsedNexusId.value })
+    if (parsedNexusId.status !== 'exact_match') {
       setLookupLoading(false)
       return undefined
     }
 
     let active = true
     setLookupLoading(true)
-    findMemberByNexusId(nexusDigits).then((member) => {
-      if (active) setMatchedMember(member)
+    findMemberByNexusId(newContactNexusId, user).then((result) => {
+      if (active) setLookupResult(result)
     }).finally(() => {
       if (active) setLookupLoading(false)
     })
     return () => { active = false }
-  }, [nexusDigits])
+  }, [newContactNexusId, user])
 
   useEffect(() => {
     const loadContacts = async () => {
@@ -68,16 +68,22 @@ export default function ContactsPanel() {
 
   const handleAddContact = async (e) => {
     e.preventDefault()
-    if (!matchedMember) return
+    const matchedMember = lookupResult.member
+    if (lookupResult.status !== 'exact_match' || !matchedMember) return
 
-    await addContact(user?.id || user?.nexusId, {
+    const contactData = {
       name: matchedMember.full_name || `${matchedMember.first_name || ''} ${matchedMember.last_name || ''}`.trim(),
-      nexusId: formatNexusId(newContactNexusId),
+      nexusId: formatCanonicalNexusId(lookupResult.nexusId),
       avatarUrl: matchedMember.avatar_url || matchedMember.avatarUrl || null,
-    })
+    }
+    await addContact(user?.id || user?.nexusId, contactData)
+    const chats = await getChats()
+    const existing = chats.find((item) => item.type === 'private' && item.title === contactData.name)
+    const chat = existing || await createChat({ title: contactData.name, type: 'private', avatar_url: contactData.avatarUrl })
     setNewContactNexusId('')
-    setMatchedMember(null)
+    setLookupResult({ status: 'partial_match', member: null })
     setShowAddModal(false)
+    navigate(`/app/chat/${chat.id}`)
   }
 
   const handleDeleteContact = async (contactId) => {
@@ -188,8 +194,12 @@ export default function ContactsPanel() {
                 <p className="text-xs text-muted-foreground mt-1">Enter the 10-digit Nexus ID. The member name is detected automatically.</p>
               </div>
               {lookupLoading && <p className="text-sm text-muted-foreground">Looking up member...</p>}
-              {!lookupLoading && matchedMember && <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">{matchedMember.full_name || `${matchedMember.first_name || ''} ${matchedMember.last_name || ''}`.trim()} · {formatNexusId(newContactNexusId)}</p>}
-              {!lookupLoading && nexusDigits.length === 10 && !matchedMember && <p className="text-sm text-red-500">No member found for this Nexus ID.</p>}
+              {!lookupLoading && parsedNexusId.status === 'invalid' && <p className="text-sm text-red-500">Enter a valid 10-digit Nexus ID.</p>}
+              {!lookupLoading && parsedNexusId.status === 'partial_match' && parsedNexusId.value && <p className="text-sm text-muted-foreground">Enter {10 - parsedNexusId.value.length} more digits.</p>}
+              {!lookupLoading && lookupResult.status === 'self_match' && <p className="text-sm text-amber-600">You cannot add your own Nexus ID.</p>}
+              {!lookupLoading && lookupResult.status === 'inactive' && <p className="text-sm text-red-500">This member account is inactive.</p>}
+              {!lookupLoading && lookupResult.status === 'not_found' && <p className="text-sm text-red-500">No member found for this Nexus ID.</p>}
+              {!lookupLoading && lookupResult.status === 'exact_match' && lookupResult.member && <div className="flex items-center gap-3 rounded-lg bg-emerald-500/10 px-3 py-2"><Avatar src={lookupResult.member.avatar_url || lookupResult.member.avatarUrl} alt={lookupResult.member.full_name || 'Member'} size="sm" /><div className="text-sm text-emerald-700"><p className="font-semibold">{lookupResult.member.full_name || `${lookupResult.member.first_name || ''} ${lookupResult.member.last_name || ''}`.trim()}</p><p>{formatCanonicalNexusId(lookupResult.nexusId)} · Confirmed member</p></div></div>}
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
@@ -200,7 +210,7 @@ export default function ContactsPanel() {
                 </button>
                 <button
                   type="submit"
-                  disabled={!matchedMember || lookupLoading}
+                  disabled={lookupResult.status !== 'exact_match' || !lookupResult.member || lookupLoading}
                   className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition duration-200"
                 >
                   Add Contact
