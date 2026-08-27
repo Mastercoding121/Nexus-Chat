@@ -5,6 +5,12 @@ import { normalizeNexusId } from '../utils/nexusId'
 const AuthContext = createContext()
 const SESSION_STORAGE_KEY = 'nexus-chat-session'
 const USER_STORAGE_KEY = 'nexus-chat-users'
+const VOLATILE_SESSION_KEYS = [
+  SESSION_STORAGE_KEY,
+  'nexus-chat-state-v1',
+  'nexus_e2ee_keys',
+  'nexus_e2ee_enabled',
+]
 
 function normalizeUser(user) {
   return {
@@ -187,9 +193,10 @@ export function AuthProvider({ children }) {
     return { user: adminUser }
   }
 
-  const logout = async () => {
+  const switchAccount = async () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(SESSION_STORAGE_KEY)
+      VOLATILE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key))
+      window.dispatchEvent(new CustomEvent('nexus-auth:account-switched'))
     }
     setUser(null)
   }
@@ -320,7 +327,8 @@ export function AuthProvider({ children }) {
     loading,
     login,
     adminLogin,
-    logout,
+    switchAccount,
+    logout: switchAccount,
     register,
     updateProfile
   }

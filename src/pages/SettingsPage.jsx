@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { useSetting } from '../hooks/useSetting'
 import SettingsShell from '../components/chat/settings/SettingsShell'
@@ -12,7 +13,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 
 function SettingsMenu() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, switchAccount } = useAuth()
+  const [logoutError, setLogoutError] = useState('')
 
   const sections = [
     { id: 'appearance', label: 'Appearance', description: 'Wallpaper, theme' },
@@ -72,6 +74,23 @@ function SettingsMenu() {
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         ))}
+
+        {logoutError && <p className="mt-5 text-sm text-red-500">{logoutError}</p>}
+        <button
+          type="button"
+          onClick={async () => {
+            setLogoutError('')
+            try {
+              await switchAccount()
+              navigate('/login', { replace: true })
+            } catch {
+              setLogoutError('Unable to switch accounts. Please try again.')
+            }
+          }}
+          className="mt-5 w-full rounded-xl border border-red-200 px-4 py-3 text-left font-medium text-red-600 transition hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-950/20"
+        >
+          Switch account
+        </button>
       </div>
     </SettingsShell>
   )

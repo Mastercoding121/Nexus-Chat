@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useTheme } from '../hooks/useTheme'
 import { useAuth } from '../lib/AuthContext'
 import Avatar from './chat/Avatar'
+import { LogOut } from 'lucide-react'
 
 function randomChoice(arr) {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -11,7 +12,7 @@ function randomChoice(arr) {
 
 export default function Header({ showSignIn = true }) {
   const { theme, toggleTheme } = useTheme()
-  const { user } = useAuth()
+  const { user, switchAccount } = useAuth()
   const [logoStyle, setLogoStyle] = useState('brand-float')
 
   useEffect(() => {
@@ -46,13 +47,24 @@ export default function Header({ showSignIn = true }) {
           {theme === 'dark' ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
         </button>
         {user ? (
-          <Link 
-            to="/app/settings/profile" 
-            className="flex items-center gap-2 hover:opacity-85 transition active:scale-95 duration-200"
-            title="View Profile Settings"
-          >
-            <Avatar src={user.avatarUrl} alt={user.fullName || 'User'} size="sm" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to={user.role === 'admin' ? '/admin/dashboard' : '/app/settings/profile'}
+              className="flex items-center gap-2 transition duration-200 hover:opacity-85 active:scale-95"
+              title="View Profile Settings"
+            >
+              <Avatar src={user.avatarUrl} alt={user.fullName || 'User'} size="sm" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => switchAccount()}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-foreground transition hover:bg-muted/80"
+              aria-label="Switch account"
+              title="Switch account"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         ) : (
           !isNative && showSignIn && (
             <Link to="/login" className="rounded-full bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition sm:px-4">
