@@ -20,7 +20,14 @@ alter table members add column if not exists role text not null default 'user';
 alter table members add column if not exists wallet_balance numeric(12, 2) not null default 0;
 alter table members add column if not exists avatar_url text;
 alter table members add column if not exists is_active boolean not null default true;
-update members set nexus_id = member_id where nexus_id is null;
+update members
+set nexus_id = ltrim(regexp_replace(member_id, '[^0-9]', '', 'g'), '0')
+where nexus_id is null
+  and length(ltrim(regexp_replace(member_id, '[^0-9]', '', 'g'), '0')) = 10;
+update members
+set nexus_id = ltrim(regexp_replace(nexus_id, '[^0-9]', '', 'g'), '0')
+where nexus_id is not null
+  and length(ltrim(regexp_replace(nexus_id, '[^0-9]', '', 'g'), '0')) = 10;
 create index if not exists members_nexus_id_idx on members(nexus_id);
 create unique index if not exists members_nexus_id_unique on members(nexus_id) where nexus_id is not null;
 
@@ -38,9 +45,7 @@ from profiles p
 where m.profile_id is null and m.email is not null and lower(m.email) = lower(p.email);
 create index if not exists members_profile_id_idx on members(profile_id);
 
-create schema if not exists private;
-
-create or replace function private.search_member_by_nexus_id(search_nexus_id text)
+create or replace function public.search_member_by_nexus_id(search_nexus_id text)
 returns table (
   id uuid,
   nexus_id text,
@@ -63,7 +68,11 @@ as $$
   from public.members as m
   left join public.profiles as p on p.id = m.profile_id
   where m.is_active = true
-    and (m.nexus_id = search_nexus_id or m.member_id = search_nexus_id)
+    and (
+      m.nexus_id = ltrim(regexp_replace($1, '[^0-9]', '', 'g'), '0')
+      or ltrim(regexp_replace(m.member_id, '[^0-9]', '', 'g'), '0') =
+         ltrim(regexp_replace($1, '[^0-9]', '', 'g'), '0')
+    )
   limit 1;
 $$;
 
@@ -121,9 +130,8 @@ drop policy if exists "Members can view their own account" on members;
 drop policy if exists "Users can search members by nexus_id" on members;
 
 revoke select on table members from anon, authenticated;
-grant usage on schema private to authenticated;
-revoke execute on function private.search_member_by_nexus_id(text) from public;
-grant execute on function private.search_member_by_nexus_id(text) to authenticated;
+revoke execute on function public.search_member_by_nexus_id(text) from public, anon;
+grant execute on function public.search_member_by_nexus_id(text) to authenticated;
 grant select on table public.profiles to postgres;
 
 drop policy if exists "Users can view their own chats" on chats;

@@ -332,7 +332,6 @@ export async function findMemberByNexusId(rawNexusId, currentUser) {
   if (supabase && isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
-        .schema('private')
         .rpc('search_member_by_nexus_id', { search_nexus_id: nexusId })
         .maybeSingle()
       if (!error && data) {

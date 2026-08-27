@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test test/*.test.js",
+    "db:apply": "node scripts/apply-supabase-schema.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
