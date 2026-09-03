@@ -6,7 +6,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/admin/**/*.js": {
-      "includeFiles": ["supabase-schema.sql", "scripts/apply-supabase-schema-node.mjs"]
+      "includeFiles": "{supabase-schema.sql,scripts/apply-supabase-schema-node.mjs}"
     }
   },
   "routes": [
