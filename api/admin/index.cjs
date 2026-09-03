@@ -2,7 +2,7 @@ const { spawn } = require('node:child_process')
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
-const secretKey = process.env.SUPABASE_SECRET_KEY
+const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
 
 function json(res, status, body) {
   res.status(status).setHeader('Cache-Control', 'no-store').json(body)
@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
       let output = ''
       child.stdout.on('data', (chunk) => { output += chunk })
       child.stderr.on('data', (chunk) => { output += chunk })
+      child.on('error', (error) => json(res, 500, { error: `Database sync could not start: ${error.message}` }))
       child.on('close', (code) => json(res, code === 0 ? 200 : 500, { error: code === 0 ? undefined : 'Database sync failed.', output: output.slice(-12000) }))
       return
     }

@@ -20,11 +20,22 @@ export default function AdminSettings() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Your Admin session has expired. Please sign in again.')
+      const { error: passwordError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password,
+      })
+      if (passwordError) throw new Error('The administrator password is incorrect.')
       const response = await fetch('/api/admin/db-sync', {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
-      const result = await response.json()
+      const responseText = await response.text()
+      let result = {}
+      try {
+        result = responseText ? JSON.parse(responseText) : {}
+      } catch {
+        throw new Error(`Database sync failed (HTTP ${response.status}).`)
+      }
       if (!response.ok) throw new Error(result.error || 'Database sync failed.')
       setStatus('Database sync completed successfully.')
       setOutput(result.output || 'Schema applied and verification completed.')
