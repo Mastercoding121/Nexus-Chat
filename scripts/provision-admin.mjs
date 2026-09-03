@@ -11,11 +11,12 @@ function readEnv(path) {
   } catch { return {} }
 }
 
-const env = { ...readEnv('.env'), ...readEnv('.env.local'), ...process.env }
+const fileEnv = { ...readEnv('.env'), ...readEnv('.env.local') }
+const env = { ...process.env, ...fileEnv }
 const email = String(env.ADMIN_EMAIL || '').trim().toLowerCase()
 const password = String(env.ADMIN_PASSWORD || '')
 const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL
-const secret = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY
+const secret = fileEnv.SUPABASE_SERVICE_ROLE_KEY || fileEnv.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
 if (!url || !secret || !email || !password) throw new Error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY), ADMIN_EMAIL, and ADMIN_PASSWORD before provisioning the Admin.')
 
 const headers = { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }
