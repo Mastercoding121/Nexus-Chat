@@ -9,6 +9,7 @@ on:
 # VERCEL_TOKEN: the provided Vercel access token
 # VERCEL_ORG_ID: cdPe7oEsf6UYW0zJXm8jaZu0
 # VERCEL_PROJECT_ID: prj_3GbRWyUwSWTxKQMaxr3GYJ7XP29P
+# SUPABASE_DB_URL: Supabase Postgres connection string for schema sync
 
 jobs:
   deploy:
@@ -17,6 +18,7 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
 
     steps:
       - name: Checkout repository
@@ -39,6 +41,9 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
+
+      - name: Configure Vercel database connection
+        run: printf '%s' "$SUPABASE_DB_URL" | vercel env add SUPABASE_DB_URL production --force --sensitive --yes --token="$VERCEL_TOKEN"
 
       - name: Pull Vercel production configuration
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
