@@ -4,7 +4,9 @@ function readEnv(path) {
   try {
     return Object.fromEntries(readFileSync(path, 'utf8').split(/\r?\n/).flatMap((line) => {
       const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/)
-      return match ? [[match[1], match[2].replace(/^['"]|['"]$/g, '')]] : []
+      if (!match) return []
+      const value = match[2].trim().replace(/\\\s*$/, '').trim().replace(/^['"]|['"]$/g, '')
+      return [[match[1], value]]
     }))
   } catch { return {} }
 }
@@ -13,8 +15,8 @@ const env = { ...readEnv('.env'), ...readEnv('.env.local'), ...process.env }
 const email = String(env.ADMIN_EMAIL || '').trim().toLowerCase()
 const password = String(env.ADMIN_PASSWORD || '')
 const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL
-const secret = env.SUPABASE_SECRET_KEY
-if (!url || !secret || !email || !password) throw new Error('Set SUPABASE_URL, server-only SUPABASE_SECRET_KEY, ADMIN_EMAIL, and ADMIN_PASSWORD before provisioning the Admin.')
+const secret = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SECRET_KEY
+if (!url || !secret || !email || !password) throw new Error('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY), ADMIN_EMAIL, and ADMIN_PASSWORD before provisioning the Admin.')
 
 const headers = { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }
 const existing = await fetch(`${url}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, { headers })

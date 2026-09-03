@@ -210,6 +210,7 @@ drop policy if exists "Users can view their own account" on members;
 create policy "Users can view their own account" on members
   for select to authenticated using (auth_user_id = (select auth.uid()));
 grant select on table public.members to authenticated;
+grant select, insert, update, delete on table public.members to service_role;
 alter table chats enable row level security;
 alter table chat_members enable row level security;
 alter table messages enable row level security;
