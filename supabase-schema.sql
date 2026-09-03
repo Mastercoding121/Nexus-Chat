@@ -224,6 +224,7 @@ drop policy if exists "Members can view their own account" on members;
 drop policy if exists "Users can search members by nexus_id" on members;
 
 revoke select on table members from anon, authenticated;
+grant select on table public.members to authenticated;
 revoke execute on function public.search_member_by_nexus_id(text) from public;
 grant execute on function public.search_member_by_nexus_id(text) to anon, authenticated;
 grant select on table public.profiles to postgres;
