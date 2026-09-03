@@ -7,6 +7,7 @@ import AuthShell from '../components/AuthShell'
 export default function Register() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -45,7 +46,7 @@ export default function Register() {
     setCopied(false)
 
     try {
-      const result = await register({ firstName, lastName, password })
+      const result = await register({ firstName, lastName, email, password })
       setMemberDetails(result)
     } catch (err) {
       setError(err.message || 'Registration failed')
@@ -58,7 +59,7 @@ export default function Register() {
     const memberNumber = memberDetails.user?.nexusIdDisplay || memberDetails.user?.nexusId || memberDetails.nexusId
 
     return (
-      <AuthShell title="Your secure Nexus account is ready" subtitle="Your account is active and you're logged in automatically. Copy your Nexus number for quick sign-in." compact>
+      <AuthShell title="Your secure Nexus account is ready" subtitle={memberDetails.requiresEmailConfirmation ? 'Confirm your email, then sign in with your Nexus number and password.' : "Your account is active and you're logged in automatically. Copy your Nexus number for quick sign-in."} compact>
         <div className={`flex flex-col rounded-[24px] border p-8 ${theme === 'dark' ? 'border-emerald-500/20 bg-slate-900/60' : 'border-emerald-200 bg-white/80'}`}>
           <div className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-sm ${theme === 'dark' ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
             Nexus account created
@@ -142,6 +143,17 @@ export default function Register() {
                   placeholder="Stone"
                 />
               </div>
+            </div>
+            <div>
+              <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${themeClasses.input}`}
+                placeholder="you@example.com"
+              />
             </div>
             <div>
               <label className={`mb-2 block text-sm font-medium ${themeClasses.muted}`}>Password <span className={theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}>(optional)</span></label>

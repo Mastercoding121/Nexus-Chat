@@ -49,6 +49,7 @@ export default function AdminDashboard() {
           <Link to="/admin/dashboard" className="font-semibold text-blue-600">Dashboard</Link>
           <Link to="/admin/users" className="text-slate-500 hover:text-slate-900 dark:hover:text-white">Users</Link>
           <Link to="/admin/support" className="text-slate-500 hover:text-slate-900 dark:hover:text-white">Support</Link>
+          <Link to="/admin/settings" className="text-slate-500 hover:text-slate-900 dark:hover:text-white">Settings</Link>
         </nav>
         <div className="mb-8 rounded-[32px] border border-slate-200 bg-white p-8 shadow-lg shadow-slate-200/30 dark:border-slate-800 dark:bg-slate-900 dark:shadow-slate-950/30">
           <p className="text-sm uppercase tracking-[0.27em] text-blue-600">Admin dashboard</p>

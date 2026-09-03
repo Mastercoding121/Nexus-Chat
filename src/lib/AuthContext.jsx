@@ -24,7 +24,6 @@ function normalizeUser(user) {
     emailVerified: user.email_verified || user.emailVerified || false,
     role: user.role || user.user_role || user.profile_role || 'user',
     adminAuthenticated: Boolean(user.adminAuthenticated),
-    password: user.password,
     avatarUrl: user.avatar_url || user.avatarUrl || null,
     createdAt: user.created_at || user.createdAt
   }
@@ -85,21 +84,16 @@ export function AuthProvider({ children }) {
         const cachedSession = typeof window !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null
         if (cachedSession) {
           const parsed = JSON.parse(cachedSession)
-          setUser(normalizeUser(parsed))
-          setLoading(false)
-          return
+          if (parsed.adminAuthenticated) localStorage.removeItem(SESSION_STORAGE_KEY)
         }
 
-        if (!isSupabaseConfigured() || !supabase) {
-          throw new Error('Supabase not configured')
-        }
-
-        const { data, error } = await supabase.from('members').select('*').limit(1)
-        if (error) throw error
-        if (data && data.length > 0) {
-          setUser(normalizeUser(data[0]))
-        } else {
-          setUser(null)
+        if (isSupabaseConfigured() && supabase) {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            const { data, error } = await supabase.from('members').select('id, member_id, nexus_id, first_name, last_name, full_name, email, role, avatar_url, is_active, created_at').eq('auth_user_id', session.user.id).maybeSingle()
+            if (error) throw error
+            if (data) setUser(normalizeUser({ ...data, email_verified: Boolean(session.user.email_confirmed_at) }))
+          }
         }
       } catch {
         const cachedSession = typeof window !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null
@@ -119,50 +113,29 @@ export function AuthProvider({ children }) {
   const login = async (nexusId, password) => {
     const normalizedId = normalizeNexusId(nexusId)
     if (!normalizedId) throw new Error('Enter a valid 10-digit Nexus number.')
-    const storedUsers = readStoredUsers()
-
     if (isSupabaseConfigured() && supabase) {
       try {
-        let { data, error } = await supabase.from('members').select('*').eq('nexus_id', normalizedId).maybeSingle()
-        if (!data && !error) {
-          const legacyResult = await supabase.from('members').select('*').eq('member_id', normalizedId).maybeSingle()
-          data = legacyResult.data
-          error = legacyResult.error
-        }
+        const { data: memberEmail, error } = await supabase.rpc('find_member_email_by_nexus_id', { search_nexus_id: normalizedId })
         if (error) throw error
-        if (!data) {
+        const email = memberEmail?.[0]?.email
+        if (!email) {
           throw new Error('Nexus number not found. Please create an account first.')
         }
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+        if (authError) throw authError
+        const { data, error: memberError } = await supabase.from('members').select('id, member_id, nexus_id, first_name, last_name, full_name, email, role, avatar_url, is_active, created_at').eq('auth_user_id', authData.user.id).single()
+        if (memberError) throw memberError
         if (data.is_active === false) throw new Error('This Nexus account is inactive.')
-        if (String(password || '').trim() !== String(data.password || '').trim()) {
-          throw new Error('Incorrect password for this Nexus number.')
-        }
-        const sessionUser = normalizeUser(data)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
-        }
+        const sessionUser = normalizeUser({ ...data, email_verified: Boolean(authData.user.email_confirmed_at) })
+        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
         setUser(sessionUser)
         return { user: sessionUser, nexusId: sessionUser.nexusId }
       } catch (err) {
-        if (storedUsers.length) {
-          const fallbackUser = storedUsers.find((candidate) => getUserNexusId(candidate) === normalizedId)
-          if (fallbackUser) {
-            if (fallbackUser.is_active === false || fallbackUser.isActive === false) {
-              throw new Error('This Nexus account is inactive.')
-            }
-            if (String(password || '').trim() !== String(fallbackUser.password || '').trim()) {
-              throw new Error('Incorrect password for this Nexus number.')
-            }
-            const sessionUser = normalizeUser(fallbackUser)
-            localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionUser))
-            setUser(sessionUser)
-            return { user: sessionUser, nexusId: sessionUser.nexusId }
-          }
-        }
-        throw err
+        throw new Error(err?.message || 'Unable to sign in. Existing accounts must be migrated to Supabase Auth.')
       }
     }
 
+    const storedUsers = readStoredUsers()
     const fallbackUser = storedUsers.find((candidate) => getUserNexusId(candidate) === normalizedId)
     if (!fallbackUser) throw new Error('Nexus number not found. Please create an account first.')
     if (fallbackUser.is_active === false || fallbackUser.isActive === false) throw new Error('This Nexus account is inactive.')
@@ -177,23 +150,20 @@ export function AuthProvider({ children }) {
 
   const adminLogin = async (email, password) => {
     const normalizedEmail = String(email || '').trim().toLowerCase()
-    if (normalizedEmail !== 'elonmusklite@gmail.com' || password !== 'Jagaban@1') {
-      throw new Error('Invalid administrator email or password.')
-    }
-
-    const adminUser = normalizeUser({
-      id: 'admin-elonmusklite',
-      email: 'elonmusklite@gmail.com',
-      full_name: 'Nexus Administrator',
-      role: 'admin',
-      adminAuthenticated: true
-    })
+    if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase Auth is not configured.')
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
+    if (authError) throw new Error('Invalid administrator email or password.')
+    const { data: member, error: memberError } = await supabase.from('members').select('id, member_id, nexus_id, first_name, last_name, full_name, email, role, avatar_url, is_active, created_at').eq('auth_user_id', authData.user.id).single()
+    if (memberError || member?.role !== 'admin') throw new Error('This account is not authorized for administration.')
+    if (member.is_active === false) throw new Error('This administrator account is inactive.')
+    const adminUser = normalizeUser({ ...member, email_verified: Boolean(authData.user.email_confirmed_at), adminAuthenticated: true })
     localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(adminUser))
     setUser(adminUser)
     return { user: adminUser }
   }
 
   const switchAccount = async () => {
+    if (supabase) await supabase.auth.signOut()
     if (typeof window !== 'undefined') {
       VOLATILE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key))
       window.dispatchEvent(new CustomEvent('nexus-auth:account-switched'))
@@ -201,7 +171,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const register = async ({ firstName, lastName, password }) => {
+  const register = async ({ firstName, lastName, email, password }) => {
     const normalizedFirstName = String(firstName || '').trim()
     const normalizedLastName = String(lastName || '').trim()
     const storedUsers = readStoredUsers()
@@ -221,7 +191,7 @@ export function AuthProvider({ children }) {
       lastName: normalizedLastName,
       full_name: fullName,
       fullName,
-      email: null,
+      email: String(email || '').trim().toLowerCase(),
       email_verified: false,
       emailVerified: false,
       role: 'user',
@@ -234,19 +204,30 @@ export function AuthProvider({ children }) {
 
     if (isSupabaseConfigured() && supabase) {
       try {
-        const { data, error } = await supabase.from('members').insert({
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: newUser.email,
+          password: newUser.password,
+        })
+        if (authError) throw authError
+        const { error } = await supabase.from('members').insert({
           member_id: newUser.member_id,
           nexus_id: newUser.nexus_id,
           first_name: newUser.first_name,
           last_name: newUser.last_name,
           full_name: newUser.full_name,
           email: newUser.email,
-          password: newUser.password,
+          password: null,
+          auth_user_id: authData.user.id,
           role: newUser.role,
           avatar_url: newUser.avatar_url,
           created_at: newUser.created_at,
-        }).select().single()
+        })
         if (error) throw error
+        if (!authData.session) {
+          return { user: newUser, nexusId, password: generatedPassword, requiresEmailConfirmation: true }
+        }
+        const { data, error: memberError } = await supabase.from('members').select('id, member_id, nexus_id, first_name, last_name, full_name, email, role, avatar_url, is_active, created_at').eq('auth_user_id', authData.user.id).single()
+        if (memberError) throw memberError
         const sessionUser = normalizeUser(data || newUser)
         sessionUser.nexusIdDisplay = formatNexusIdForDisplay(sessionUser.nexusId)
         if (typeof window !== 'undefined') {
@@ -255,6 +236,7 @@ export function AuthProvider({ children }) {
         setUser(sessionUser)
         return { user: sessionUser, nexusId, password: generatedPassword }
       } catch {
+        if (isSupabaseConfigured() && supabase) throw new Error('Unable to create your Supabase Auth account. Please try again.')
         const nextUsers = [newUser, ...storedUsers]
         writeStoredUsers(nextUsers)
         const sessionUser = normalizeUser(newUser)

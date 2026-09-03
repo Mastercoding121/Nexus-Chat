@@ -6,7 +6,7 @@ create table if not exists members (
   last_name text not null,
   full_name text,
   email text,
-  password text not null,
+  password text,
   role text not null default 'user',
   wallet_balance numeric(12, 2) not null default 0,
   avatar_url text,
@@ -20,6 +20,8 @@ alter table members add column if not exists role text not null default 'user';
 alter table members add column if not exists wallet_balance numeric(12, 2) not null default 0;
 alter table members add column if not exists avatar_url text;
 alter table members add column if not exists is_active boolean not null default true;
+alter table members add column if not exists auth_user_id uuid references auth.users(id) on delete cascade;
+alter table members alter column password drop not null;
 update members
 set nexus_id = ltrim(regexp_replace(member_id, '[^0-9]', '', 'g'), '0')
 where nexus_id is null
@@ -30,6 +32,7 @@ where nexus_id is not null
   and length(ltrim(regexp_replace(nexus_id, '[^0-9]', '', 'g'), '0')) = 10;
 create index if not exists members_nexus_id_idx on members(nexus_id);
 create unique index if not exists members_nexus_id_unique on members(nexus_id) where nexus_id is not null;
+create unique index if not exists members_auth_user_id_unique on members(auth_user_id) where auth_user_id is not null;
 
 create table if not exists profiles (
   id uuid primary key default gen_random_uuid(),
@@ -81,6 +84,8 @@ exception
 end;
 $$;
 
+drop function if exists public.search_member_by_nexus_id(text);
+
 create or replace function public.search_member_by_nexus_id(search_nexus_id text)
 returns table (
   id uuid,
@@ -111,6 +116,54 @@ as $$
     )
   limit 1;
 $$;
+
+create or replace function public.authenticate_member(login_nexus_id text, login_password text)
+returns table (
+  id uuid,
+  member_id text,
+  nexus_id text,
+  first_name text,
+  last_name text,
+  full_name text,
+  email text,
+  role text,
+  avatar_url text,
+  is_active boolean,
+  created_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.id, m.member_id, m.nexus_id, m.first_name, m.last_name,
+         m.full_name, m.email, m.role, m.avatar_url, m.is_active, m.created_at
+  from public.members as m
+  where (m.nexus_id = ltrim(regexp_replace(login_nexus_id, '[^0-9]', '', 'g'), '0')
+         or m.member_id = ltrim(regexp_replace(login_nexus_id, '[^0-9]', '', 'g'), '0'))
+    and m.password = login_password
+  limit 1;
+$$;
+revoke execute on function public.authenticate_member(text, text) from public;
+grant execute on function public.authenticate_member(text, text) to anon, authenticated;
+
+create or replace function public.find_member_email_by_nexus_id(search_nexus_id text)
+returns table (email text)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.email
+  from public.members as m
+  where m.auth_user_id is not null
+    and (m.nexus_id = ltrim(regexp_replace(search_nexus_id, '[^0-9]', '', 'g'), '0')
+         or m.member_id = ltrim(regexp_replace(search_nexus_id, '[^0-9]', '', 'g'), '0'))
+    and m.is_active = true
+  limit 1;
+$$;
+revoke execute on function public.find_member_email_by_nexus_id(text) from public;
+grant execute on function public.find_member_email_by_nexus_id(text) to anon, authenticated;
 
 create table if not exists chats (
   id uuid primary key default gen_random_uuid(),
@@ -153,6 +206,10 @@ create table if not exists support_messages (
 create index if not exists support_messages_conversation_idx on support_messages(conversation_id, created_at);
 
 alter table members enable row level security;
+drop policy if exists "Users can view their own account" on members;
+create policy "Users can view their own account" on members
+  for select to authenticated using (auth_user_id = (select auth.uid()));
+grant select on table public.members to authenticated;
 alter table chats enable row level security;
 alter table chat_members enable row level security;
 alter table messages enable row level security;

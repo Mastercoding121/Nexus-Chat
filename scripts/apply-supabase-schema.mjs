@@ -42,17 +42,46 @@ if (!existsSync(schemaPath)) {
       stdio: 'inherit',
     })
 
-    console.log('Verifying Nexus ID columns and lookup function...')
+    console.log('Verifying application tables, security, and lookup function...')
     execFileSync(psqlPath, [
       databaseUrl,
       '--command',
-      `select table_name, column_name
+      `with required_tables(table_name) as (
+         values ('members'), ('profiles'), ('feed_posts'), ('chats'),
+                ('chat_members'), ('messages'), ('support_messages')
+       )
+       select required_tables.table_name,
+              to_regclass('public.' || required_tables.table_name) is not null as table_exists,
+              coalesce(cls.relrowsecurity, false) as rls_enabled,
+              count(columns.column_name) as column_count
+       from required_tables
+       left join pg_class cls on cls.oid = to_regclass('public.' || required_tables.table_name)
+       left join information_schema.columns columns
+         on columns.table_schema = 'public'
+        and columns.table_name = required_tables.table_name
+       group by required_tables.table_name, cls.relrowsecurity
+       order by required_tables.table_name;
+
+       select column_name
        from information_schema.columns
        where table_schema = 'public'
          and table_name = 'members'
          and column_name in ('nexus_id', 'profile_id', 'avatar_url', 'is_active')
        order by column_name;
-       select to_regprocedure('public.search_member_by_nexus_id(text)') as lookup_function;`,
+
+       select to_regprocedure('public.search_member_by_nexus_id(text)') as lookup_function;
+
+      select to_regprocedure('public.authenticate_member(text,text)') as authentication_function,
+        has_function_privilege('anon', 'public.authenticate_member(text,text)', 'EXECUTE') as anon_can_authenticate,
+        has_table_privilege('anon', 'public.members', 'SELECT') as anon_can_read_members;
+
+       select exists (
+         select 1
+         from pg_publication_tables
+         where pubname = 'supabase_realtime'
+           and schemaname = 'public'
+           and tablename = 'feed_posts'
+       ) as feed_posts_realtime;`,
     ], { cwd: projectRoot, stdio: 'inherit' })
 
     console.log('Supabase schema applied successfully.')
