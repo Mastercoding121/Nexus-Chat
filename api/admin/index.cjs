@@ -25,12 +25,15 @@ module.exports = async (req, res) => {
     await requireAdmin(req)
     const route = req.url.split('?')[0]
     if (route.endsWith('/db-sync') && req.method === 'POST') {
-      const child = spawn('npm', ['run', 'db:apply'], { cwd: process.cwd(), env: process.env })
+      const child = spawn(process.execPath, ['scripts/apply-supabase-schema-node.mjs'], { cwd: process.cwd(), env: process.env })
       let output = ''
       child.stdout.on('data', (chunk) => { output += chunk })
       child.stderr.on('data', (chunk) => { output += chunk })
       child.on('error', (error) => json(res, 500, { error: `Database sync could not start: ${error.message}` }))
-      child.on('close', (code) => json(res, code === 0 ? 200 : 500, { error: code === 0 ? undefined : 'Database sync failed.', output: output.slice(-12000) }))
+      child.on('close', (code) => {
+        const details = output.slice(-12000)
+        json(res, code === 0 ? 200 : 500, { error: code === 0 ? undefined : details || 'Database sync failed.', output: details })
+      })
       return
     }
     const headers = { apikey: secretKey, Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' }
