@@ -16,6 +16,7 @@ function readEnvFile(filePath) {
 }
 
 const localEnv = {
+  ...readEnvFile(resolve(projectRoot, '.env')),
   ...readEnvFile(resolve(projectRoot, '.env.local.txt')),
   ...readEnvFile(resolve(projectRoot, '.env.local')),
 }
