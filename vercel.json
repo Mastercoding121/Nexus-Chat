@@ -5,6 +5,7 @@
   "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"main\" ]; then exit 0; else exit 1; fi",
   "outputDirectory": "dist",
   "routes": [
+    { "src": "/api/admin/db-sync", "dest": "/api/admin/db-sync.cjs" },
     { "src": "/api/admin/(.*)", "dest": "/api/admin/index.cjs" },
     {      "handle": "filesystem"
     },
