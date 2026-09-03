@@ -10,11 +10,11 @@ function readEnv(path) {
 }
 
 const env = { ...readEnv('.env'), ...readEnv('.env.local'), ...process.env }
-const email = 'elonmuskite@gmail.com'
-const password = 'Jagaban@1'
+const email = String(env.ADMIN_EMAIL || '').trim().toLowerCase()
+const password = String(env.ADMIN_PASSWORD || '')
 const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL
 const secret = env.SUPABASE_SECRET_KEY
-if (!url || !secret) throw new Error('Set SUPABASE_URL and server-only SUPABASE_SECRET_KEY before provisioning the Admin.')
+if (!url || !secret || !email || !password) throw new Error('Set SUPABASE_URL, server-only SUPABASE_SECRET_KEY, ADMIN_EMAIL, and ADMIN_PASSWORD before provisioning the Admin.')
 
 const headers = { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }
 const existing = await fetch(`${url}/auth/v1/admin/users?email=${encodeURIComponent(email)}`, { headers })

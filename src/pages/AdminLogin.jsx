@@ -12,7 +12,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (user?.role === 'admin' && user.email === 'elonmuskite@gmail.com' && user.adminAuthenticated) navigate('/admin/dashboard', { replace: true })
+    if (user?.role === 'admin' && user.adminAuthenticated) navigate('/admin/dashboard', { replace: true })
   }, [user, navigate])
 
   const handleSubmit = async (event) => {
