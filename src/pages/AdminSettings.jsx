@@ -27,7 +27,11 @@ export default function AdminSettings() {
       if (passwordError) throw new Error('The administrator password is incorrect.')
       const response = await fetch('/api/admin/db-sync', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
       })
       const responseText = await response.text()
       let result = {}
