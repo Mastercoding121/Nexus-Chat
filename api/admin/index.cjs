@@ -1,4 +1,6 @@
-const { spawn } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+const { Client } = require('pg')
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
@@ -6,6 +8,47 @@ const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_
 
 function json(res, status, body) {
   res.status(status).setHeader('Cache-Control', 'no-store').json(body)
+}
+
+async function runDatabaseSync() {
+  const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL
+  if (!databaseUrl) throw new Error('Database sync requires SUPABASE_DB_URL or DATABASE_URL in the Vercel production environment.')
+
+  const client = new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+  try {
+    await client.connect()
+    const schema = fs.readFileSync(path.join(process.cwd(), 'supabase-schema.sql'), 'utf8')
+    await client.query(schema)
+    const verification = await client.query(`
+      with required_tables(table_name) as (
+        values ('members'), ('profiles'), ('feed_posts'), ('chats'),
+               ('chat_members'), ('messages'), ('support_messages')
+      )
+      select required_tables.table_name,
+             to_regclass('public.' || required_tables.table_name) is not null as table_exists,
+             coalesce(cls.relrowsecurity, false) as rls_enabled,
+             count(columns.column_name) as column_count
+      from required_tables
+      left join pg_class cls on cls.oid = to_regclass('public.' || required_tables.table_name)
+      left join information_schema.columns columns
+        on columns.table_schema = 'public'
+       and columns.table_name = required_tables.table_name
+      group by required_tables.table_name, cls.relrowsecurity
+      order by required_tables.table_name;
+
+      select to_regprocedure('public.search_member_by_nexus_id(text)') as lookup_function,
+             to_regprocedure('public.authenticate_member(text,text)') as authentication_function,
+             exists (
+               select 1 from pg_publication_tables
+               where pubname = 'supabase_realtime'
+                 and schemaname = 'public'
+                 and tablename = 'feed_posts'
+             ) as feed_posts_realtime;
+    `)
+    return `Schema applied and verified.\n${verification.rows.map((row) => JSON.stringify(row)).join('\n')}`
+  } finally {
+    await client.end().catch(() => {})
+  }
 }
 
 async function requireAdmin(req) {
@@ -25,16 +68,11 @@ module.exports = async (req, res) => {
     await requireAdmin(req)
     const route = req.url.split('?')[0]
     if (route.endsWith('/db-sync') && req.method === 'POST') {
-      const child = spawn(process.execPath, ['scripts/apply-supabase-schema-node.mjs'], { cwd: process.cwd(), env: process.env })
-      let output = ''
-      child.stdout.on('data', (chunk) => { output += chunk })
-      child.stderr.on('data', (chunk) => { output += chunk })
-      child.on('error', (error) => json(res, 500, { error: `Database sync could not start: ${error.message}` }))
-      child.on('close', (code) => {
-        const details = output.slice(-12000)
-        json(res, code === 0 ? 200 : 500, { error: code === 0 ? undefined : details || 'Database sync failed.', output: details })
-      })
-      return
+      try {
+        return json(res, 200, { output: await runDatabaseSync() })
+      } catch (error) {
+        return json(res, 500, { error: `Database sync failed: ${error.message}` })
+      }
     }
     const headers = { apikey: secretKey, Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' }
     const user = req.body?.user || {}
