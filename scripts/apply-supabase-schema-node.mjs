@@ -15,10 +15,13 @@ function readEnvFile(filePath) {
 
 const fileEnv = { ...readEnvFile(resolve(projectRoot, '.env')), ...readEnvFile(resolve(projectRoot, '.env.local')) }
 const databaseUrl = fileEnv.SUPABASE_DB_URL || fileEnv.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.DATABASE_URL
+const adminPassword = fileEnv.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD
 
 if (!databaseUrl) throw new Error('set SUPABASE_DB_URL or DATABASE_URL before running this script')
 
-const client = new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+const connectionUrl = new URL(databaseUrl)
+if (adminPassword) connectionUrl.password = adminPassword
+const client = new Client({ connectionString: connectionUrl.toString(), ssl: { rejectUnauthorized: false } })
 const schema = readFileSync(resolve(projectRoot, 'supabase-schema.sql'), 'utf8')
 
 try {
