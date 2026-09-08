@@ -10,15 +10,11 @@ function json(res, status, body) {
   res.status(status).setHeader('Cache-Control', 'no-store').json(body)
 }
 
-async function runDatabaseSync(adminPassword) {
+async function runDatabaseSync() {
   const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL
   if (!databaseUrl) throw new Error('Database sync requires SUPABASE_DB_URL or DATABASE_URL in the Vercel production environment.')
-  if (!adminPassword) throw new Error('Database sync requires the administrator password.')
 
-  const connectionUrl = new URL(databaseUrl)
-  connectionUrl.password = adminPassword
-
-  const client = new Client({ connectionString: connectionUrl.toString(), ssl: { rejectUnauthorized: false } })
+  const client = new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
   try {
     await client.connect()
     const schema = fs.readFileSync(path.join(process.cwd(), 'supabase-schema.sql'), 'utf8')
@@ -73,7 +69,7 @@ module.exports = async (req, res) => {
     const route = req.url.split('?')[0]
     if (route.endsWith('/db-sync') && req.method === 'POST') {
       try {
-        return json(res, 200, { output: await runDatabaseSync(req.body?.password) })
+        return json(res, 200, { output: await runDatabaseSync() })
       } catch (error) {
         return json(res, 500, { error: `Database sync failed: ${error.message}` })
       }
