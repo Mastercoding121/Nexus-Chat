@@ -74,6 +74,12 @@ function writeStoredUsers(users) {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(users))
 }
 
+function getAuthErrorMessage(error, fallback = 'Unable to sign in.') {
+  if (error?.code === 'email_not_confirmed') return 'Please confirm your email address before signing in.'
+  if (error?.code === 'invalid_credentials' || error?.status === 400) return 'Invalid email or password.'
+  return error?.message || fallback
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -131,7 +137,7 @@ export function AuthProvider({ children }) {
         setUser(sessionUser)
         return { user: sessionUser, nexusId: sessionUser.nexusId }
       } catch (err) {
-        throw new Error(err?.message || 'Unable to sign in. Existing accounts must be migrated to Supabase Auth.')
+        throw new Error(getAuthErrorMessage(err, 'Unable to sign in. Existing accounts must be migrated to Supabase Auth.'))
       }
     }
 
@@ -151,9 +157,12 @@ export function AuthProvider({ children }) {
   const adminLogin = async (email, password) => {
     const normalizedEmail = String(email || '').trim().toLowerCase()
     if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase Auth is not configured.')
+    if (!normalizedEmail || !password) throw new Error('Enter your administrator email and password.')
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password })
-    if (authError) throw new Error('Invalid administrator email or password.')
+    if (authError) throw new Error(getAuthErrorMessage(authError, 'Unable to sign in as administrator.'))
+    if (!authData?.user?.id) throw new Error('Supabase Auth returned no user session.')
     const { data: member, error: memberError } = await supabase.from('members').select('id, member_id, nexus_id, first_name, last_name, full_name, email, role, avatar_url, is_active, created_at').eq('auth_user_id', authData.user.id).single()
+    if (memberError?.code === 'PGRST116') throw new Error('Your Auth account is not linked to a member record.')
     if (memberError || member?.role !== 'admin') throw new Error('This account is not authorized for administration.')
     if (member.is_active === false) throw new Error('This administrator account is inactive.')
     const adminUser = normalizeUser({ ...member, email_verified: Boolean(authData.user.email_confirmed_at), adminAuthenticated: true })

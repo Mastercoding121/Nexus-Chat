@@ -6,6 +6,14 @@ const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
 const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
 
+class HttpError extends Error {
+  constructor(status, message, code) {
+    super(message)
+    this.status = status
+    this.code = code
+  }
+}
+
 function json(res, status, body) {
   res.status(status).setHeader('Cache-Control', 'no-store').json(body)
 }
@@ -65,15 +73,26 @@ async function runDatabaseSync() {
 }
 
 async function requireAdmin(req) {
-  if (!supabaseUrl || !publishableKey || !secretKey) throw Object.assign(new Error('Server Supabase credentials are not configured.'), { status: 503 })
+  if (!supabaseUrl || !publishableKey || !secretKey) throw new HttpError(503, 'Server Supabase credentials are not configured.', 'server_configuration_error')
   const token = req.headers.authorization?.replace(/^Bearer\s+/i, '')
-  if (!token) throw Object.assign(new Error('Authentication required.'), { status: 401 })
-  const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: publishableKey, Authorization: `Bearer ${token}` } })
-  if (!authResponse.ok) throw Object.assign(new Error('Invalid authentication session.'), { status: 401 })
-  const authUser = await authResponse.json()
-  const memberResponse = await fetch(`${supabaseUrl}/rest/v1/members?auth_user_id=eq.${encodeURIComponent(authUser.id)}&select=role,is_active`, { headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}` } })
-  const members = await memberResponse.json()
-  if (!memberResponse.ok || members[0]?.role !== 'admin' || members[0]?.is_active === false) throw Object.assign(new Error('Administrator access required.'), { status: 403 })
+  if (!token) throw new HttpError(401, 'Authentication required.', 'missing_session')
+  let authResponse
+  try {
+    authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: publishableKey, Authorization: `Bearer ${token}` } })
+  } catch {
+    throw new HttpError(502, 'Unable to validate the Supabase session.', 'auth_unavailable')
+  }
+  if (!authResponse.ok) throw new HttpError(401, 'Invalid or expired authentication session.', 'invalid_session')
+  const authUser = await authResponse.json().catch(() => null)
+  if (!authUser?.id) throw new HttpError(401, 'Supabase returned an invalid authentication session.', 'invalid_session')
+  let memberResponse
+  try {
+    memberResponse = await fetch(`${supabaseUrl}/rest/v1/members?auth_user_id=eq.${encodeURIComponent(authUser.id)}&select=role,is_active`, { headers: { apikey: secretKey, Authorization: `Bearer ${secretKey}` } })
+  } catch {
+    throw new HttpError(502, 'Unable to verify administrator access.', 'member_lookup_unavailable')
+  }
+  const members = await memberResponse.json().catch(() => [])
+  if (!memberResponse.ok || members[0]?.role !== 'admin' || members[0]?.is_active === false) throw new HttpError(403, 'Administrator access required.', 'admin_access_required')
 }
 
 module.exports = async (req, res) => {
@@ -84,7 +103,11 @@ module.exports = async (req, res) => {
       try {
         return json(res, 200, { output: await runDatabaseSync() })
       } catch (error) {
-        return json(res, 500, { error: `Database sync failed: ${error.message}` })
+        const status = error.code === '28P01' || error.code === '28000' ? 503 : error.status || 500
+        const message = status === 503 && (error.code === '28P01' || error.code === '28000')
+          ? 'Database credentials were rejected. Update SUPABASE_DB_PASSWORD or SUPABASE_DB_URL in the deployment environment.'
+          : `Database sync failed: ${error.message || 'Unknown database error.'}`
+        return json(res, status, { error: message, code: error.code || 'database_sync_failed' })
       }
     }
     const headers = { apikey: secretKey, Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json' }
@@ -104,5 +127,8 @@ module.exports = async (req, res) => {
       return json(res, response.ok ? 200 : response.status, { error: response.ok ? undefined : await response.text() })
     }
     return json(res, 404, { error: 'Not found.' })
-  } catch (error) { return json(res, error.status || 500, { error: error.message || 'Request failed.' }) }
+  } catch (error) {
+    const status = error.status || 500
+    return json(res, status, { error: error.message || 'Request failed.', code: error.code || 'request_failed' })
+  }
 }
