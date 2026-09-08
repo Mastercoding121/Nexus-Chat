@@ -10,11 +10,24 @@ function json(res, status, body) {
   res.status(status).setHeader('Cache-Control', 'no-store').json(body)
 }
 
-async function runDatabaseSync() {
+function getDatabaseConnectionString() {
   const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL
   if (!databaseUrl) throw new Error('Database sync requires SUPABASE_DB_URL or DATABASE_URL in the Vercel production environment.')
 
-  const client = new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+  const databasePassword = process.env.SUPABASE_DB_PASSWORD
+  if (!databasePassword) return databaseUrl
+
+  try {
+    const connectionUrl = new URL(databaseUrl)
+    connectionUrl.password = databasePassword
+    return connectionUrl.toString()
+  } catch {
+    throw new Error('Database sync requires a valid PostgreSQL connection URL.')
+  }
+}
+
+async function runDatabaseSync() {
+  const client = new Client({ connectionString: getDatabaseConnectionString(), ssl: { rejectUnauthorized: false } })
   try {
     await client.connect()
     const schema = fs.readFileSync(path.join(process.cwd(), 'supabase-schema.sql'), 'utf8')
