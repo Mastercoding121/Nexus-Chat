@@ -1,12 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Database, LoaderCircle, Play } from 'lucide-react'
-import { useAuth } from '../lib/AuthContext'
 import { supabase } from '../lib/supabase'
 
 export default function AdminSettings() {
-  const { user } = useAuth()
-  const [password, setPassword] = useState('')
   const [status, setStatus] = useState('')
   const [output, setOutput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,18 +17,11 @@ export default function AdminSettings() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Your Admin session has expired. Please sign in again.')
-      const { error: passwordError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password,
-      })
-      if (passwordError) throw new Error('The administrator password is incorrect.')
       const response = await fetch('/api/admin/db-sync', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ password }),
       })
       const responseText = await response.text()
       let result = {}
@@ -43,7 +33,6 @@ export default function AdminSettings() {
       if (!response.ok) throw new Error(result.error || 'Database sync failed.')
       setStatus('Database sync completed successfully.')
       setOutput(result.output || 'Schema applied and verification completed.')
-      setPassword('')
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Database sync failed.')
     } finally {
@@ -80,10 +69,7 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          <form onSubmit={runDatabaseSync} className="mt-6 space-y-4">
-            <label className="block text-sm font-medium">Confirm administrator password
-              <input type="password" required value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950" />
-            </label>
+          <form onSubmit={runDatabaseSync} className="mt-6">
             <button type="submit" disabled={loading} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50">
               {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {loading ? 'Syncing database...' : 'Run database sync'}
