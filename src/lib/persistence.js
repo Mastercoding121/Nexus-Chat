@@ -1,7 +1,8 @@
-import { supabase, isSupabaseConfigured } from './supabase'
+import { client, databases, isAppwriteConfigured, APPWRITE_DATABASE_ID, ID, Query, Realtime } from './appwrite'
 
 const STORAGE_KEY = 'nexus-chat-state-v1'
 const CONTACTS_STORAGE_KEY = 'nexus-contacts-state-v1'
+const APPWRITE_ID_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}$/
 
 function readLocalContacts() {
   if (typeof window === 'undefined') return []
@@ -19,7 +20,6 @@ function writeLocalContacts(contacts) {
   try {
     window.localStorage.setItem(CONTACTS_STORAGE_KEY, JSON.stringify(contacts))
   } catch {
-    // Ignore storage failures
   }
 
   return contacts
@@ -53,7 +53,6 @@ function writeLocalChats(chats) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(chats))
   } catch {
-    // Ignore storage failures and continue with in-memory state.
   }
 
   return chats
@@ -65,93 +64,127 @@ function notifyChatUpdate() {
   }
 }
 
+function isAppwriteId(str) {
+  return APPWRITE_ID_REGEX.test(String(str || ''))
+}
+
+async function upsertChatDocument(chat) {
+  const payload = {
+    title: chat.title,
+    type: chat.type || 'private',
+    owner_id: chat.owner_id || null,
+    created_at: chat.created_at || new Date().toISOString(),
+  }
+  const id = String(chat.id)
+
+  if (typeof databases.upsertDocument === 'function') {
+    return databases.upsertDocument(APPWRITE_DATABASE_ID, 'chats', id, payload)
+  }
+
+  try {
+    await databases.getDocument(APPWRITE_DATABASE_ID, 'chats', id)
+    return databases.updateDocument(APPWRITE_DATABASE_ID, 'chats', id, payload)
+  } catch {
+    return databases.createDocument(APPWRITE_DATABASE_ID, 'chats', id, payload)
+  }
+}
+
 export function startRealtimeListeners() {
-  if (!supabase || !isSupabaseConfigured()) return null
+  if (!client || !isAppwriteConfigured()) return null
 
-  const channel = supabase.channel('public-realtime')
+  const realtime = new Realtime(client)
+  let closed = false
+  let subscription = null
 
-  channel.on(
-    'postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'messages' },
-    async (payload) => {
-      const msg = payload.new
-      if (!msg || !msg.chat_id) return
+  realtime.subscribe(
+    [
+      `databases.${APPWRITE_DATABASE_ID}.collections.messages.documents`,
+      `databases.${APPWRITE_DATABASE_ID}.collections.chats.documents`,
+    ],
+    async (event) => {
+      const payload = event?.payload
+      const events = event?.events || []
+      const isMessage = events.some((name) => name.includes('collections.messages.documents'))
+      const isChat = events.some((name) => name.includes('collections.chats.documents'))
 
-      await appendMessage(String(msg.chat_id), {
-        id: String(msg.id),
-        sender_id: String(msg.sender_id || 'other'),
-        content: msg.content,
-        type: msg.type || 'text',
-        file_url: msg.file_url || null,
-        file_name: msg.file_name || null,
-        encrypted: Boolean(msg.encrypted),
-        created_at: msg.created_at || new Date().toISOString(),
-      })
+      if (isMessage && payload?.chat_id) {
+        await appendMessage(String(payload.chat_id), {
+          id: String(payload.$id || payload.id),
+          sender_id: String(payload.sender_id || 'other'),
+          content: payload.content,
+          type: payload.type || 'text',
+          file_url: payload.file_url || null,
+          file_name: payload.file_name || null,
+          encrypted: Boolean(payload.encrypted),
+          created_at: payload.created_at || payload.$createdAt || new Date().toISOString(),
+        })
 
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('nexus:incoming-notification', {
-          detail: {
-            title: 'New message',
-            preview: msg.type === 'text' ? msg.content : 'New attachment received',
-            avatarUrl: '/logo.png',
-            type: 'message',
-          },
-        }))
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('nexus:incoming-notification', {
+            detail: {
+              title: 'New message',
+              preview: payload.type === 'text' ? payload.content : 'New attachment received',
+              avatarUrl: '/logo.png',
+              type: 'message',
+            },
+          }))
+        }
+      }
+
+      if (isChat) {
+        await readChats()
+        notifyChatUpdate()
       }
     }
-  )
+  ).then((sub) => {
+    if (closed) {
+      sub.close()
+      return
+    }
+    subscription = sub
+  }).catch(() => {})
 
-  const chatChanged = async () => {
-    await readChats()
-    notifyChatUpdate()
-  }
-
-  channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chats' }, chatChanged)
-  channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chats' }, chatChanged)
-  channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chats' }, chatChanged)
-
-  channel.subscribe()
-  return channel
-}
-
-export function stopRealtimeListeners(channel) {
-  if (channel && typeof channel.unsubscribe === 'function') {
-    channel.unsubscribe()
+  return () => {
+    closed = true
+    if (subscription && typeof subscription.close === 'function') {
+      subscription.close()
+    }
   }
 }
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const isUUID = (str) => UUID_REGEX.test(str);
+export function stopRealtimeListeners(unsubscribe) {
+  if (typeof unsubscribe === 'function') {
+    unsubscribe()
+  }
+  if (unsubscribe && typeof unsubscribe.close === 'function') {
+    unsubscribe.close()
+  }
+}
 
 export async function readChats() {
-  let supabaseChats = [];
-  if (supabase && isSupabaseConfigured()) {
+  let remoteChats = []
+  if (databases && isAppwriteConfigured()) {
     try {
-      const { data, error } = await supabase.from('chats').select('*').order('created_at', { ascending: false })
-      if (!error && Array.isArray(data)) {
-        supabaseChats = data.map(chat => ({
-          ...chat,
-          id: String(chat.id),
-          messages: [],
-        }))
-      }
+      const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'chats', [
+        Query.orderDesc('created_at'),
+      ])
+      remoteChats = (documents || []).map((chat) => ({
+        ...chat,
+        id: String(chat.$id || chat.id),
+        messages: [],
+      }))
     } catch {
-      // Fall back to local storage on any Supabase failure.
     }
   }
 
   const localChats = readLocalChats()
-  
-  // Merge local and supabase chats, preferring local chats to retain messages/unread state
   const mergedMap = new Map()
-  
-  // Add local chats first
-  localChats.forEach(chat => {
+
+  localChats.forEach((chat) => {
     mergedMap.set(chat.id, chat)
   })
-  
-  // Add/merge supabase chats
-  supabaseChats.forEach(chat => {
+
+  remoteChats.forEach((chat) => {
     const existing = mergedMap.get(chat.id)
     mergedMap.set(chat.id, {
       ...existing,
@@ -159,29 +192,18 @@ export async function readChats() {
       messages: existing?.messages || chat.messages || [],
     })
   })
-  
+
   return Array.from(mergedMap.values())
 }
 
 export async function writeChats(chats) {
   const localChats = writeLocalChats(chats)
 
-  if (supabase && isSupabaseConfigured()) {
+  if (databases && isAppwriteConfigured()) {
     try {
-      const chatsToUpsert = localChats
-        .filter(chat => isUUID(chat.id))
-        .map(chat => ({
-          id: chat.id,
-          title: chat.title,
-          type: chat.type || 'private',
-          created_at: chat.created_at || new Date().toISOString(),
-        }))
-
-      if (chatsToUpsert.length > 0) {
-        await supabase.from('chats').upsert(chatsToUpsert)
-      }
+      const chatsToUpsert = localChats.filter((chat) => isAppwriteId(chat.id))
+      await Promise.all(chatsToUpsert.map((chat) => upsertChatDocument(chat)))
     } catch {
-      // Keep local storage as the source of truth when Supabase is unavailable.
     }
   }
 
@@ -230,35 +252,23 @@ export async function appendMessage(chatId, message) {
 }
 
 export async function getChatById(chatId) {
-  if (supabase && isSupabaseConfigured()) {
+  if (databases && isAppwriteConfigured()) {
     try {
-      const { data: chatData, error: chatError } = await supabase.from('chats').select('*').eq('id', chatId).single()
-      if (!chatError && chatData) {
-        const { data: messageData, error: messageError } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('chat_id', chatId)
-          .order('created_at', { ascending: true })
+      const chatData = await databases.getDocument(APPWRITE_DATABASE_ID, 'chats', chatId)
+      const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'messages', [
+        Query.equal('chat_id', String(chatId)),
+        Query.orderAsc('created_at'),
+      ])
 
-        if (!messageError && Array.isArray(messageData)) {
-          return {
-            ...chatData,
-            id: String(chatData.id),
-            messages: messageData.map((msg) => ({
-              ...msg,
-              id: String(msg.id),
-            })),
-          }
-        }
-
-        return {
-          ...chatData,
-          id: String(chatData.id),
-          messages: [],
-        }
+      return {
+        ...chatData,
+        id: String(chatData.$id || chatData.id),
+        messages: (documents || []).map((msg) => ({
+          ...msg,
+          id: String(msg.$id || msg.id),
+        })),
       }
     } catch {
-      // Fall back to local persistence on any Supabase failure.
     }
   }
 
@@ -269,7 +279,7 @@ export async function getChatById(chatId) {
 export async function createChat(chatData) {
   const chats = await getChats()
   const newChat = {
-    id: `${Date.now()}`,
+    id: isAppwriteConfigured() ? ID.unique() : `${Date.now()}`,
     title: chatData.title || 'New Chat',
     type: chatData.type || 'private',
     avatar_url: chatData.avatar_url || null,
@@ -278,6 +288,7 @@ export async function createChat(chatData) {
     unread_count: 0,
     encrypted: Boolean(chatData.encrypted),
     messages: chatData.messages || [],
+    created_at: new Date().toISOString(),
   }
 
   await writeChats([newChat, ...chats])
@@ -321,25 +332,22 @@ export function formatNexusId(raw) {
 
 export async function searchUserByNexusId(nexusId) {
   try {
-    // Normalize the nexus ID by removing all non-digit characters
     const normalizedId = String(nexusId || '').replace(/\D/g, '')
-    
+
     if (!normalizedId || normalizedId.length < 10) {
       return null
     }
-    
-    // Try searching in Supabase first if configured
-    if (supabase && isSupabaseConfigured()) {
+
+    if (databases && isAppwriteConfigured()) {
       try {
-        const { data, error } = await supabase
-          .from('members')
-          .select('*')
-          .eq('member_id', normalizedId)
-          .maybeSingle()
-        
-        if (!error && data) {
+        const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'members', [
+          Query.equal('member_id', normalizedId),
+          Query.limit(1),
+        ])
+        const data = documents?.[0]
+        if (data) {
           return {
-            id: data.id,
+            id: data.$id || data.id,
             nexusId: data.member_id || data.nexus_id,
             nexusIdDisplay: formatNexusId(data.member_id || data.nexus_id),
             firstName: data.first_name || data.firstName,
@@ -351,11 +359,10 @@ export async function searchUserByNexusId(nexusId) {
           }
         }
       } catch (err) {
-        console.error('Error searching in Supabase:', err)
+        console.error('Error searching in Appwrite:', err)
       }
     }
-    
-    // Fallback to searching in localStorage
+
     const storedUsersJson = typeof window !== 'undefined' ? window.localStorage?.getItem('nexus-chat-users') : null
     if (storedUsersJson) {
       try {
@@ -364,7 +371,7 @@ export async function searchUserByNexusId(nexusId) {
           const userId = String(u.nexus_id || u.nexusId || u.member_id || u.memberId || '').replace(/\D/g, '')
           return userId === normalizedId
         })
-        
+
         if (user) {
           return {
             id: user.id,
@@ -382,7 +389,7 @@ export async function searchUserByNexusId(nexusId) {
         console.error('Error searching in localStorage:', err)
       }
     }
-    
+
     return null
   } catch (err) {
     console.error('Error searching for user by Nexus ID:', err)

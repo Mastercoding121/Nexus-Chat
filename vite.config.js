@@ -22,7 +22,7 @@ export default defineConfig({
             if (id.includes('react-dom') || id.includes('react-router')) return 'vendor'
             if (id.includes('/react/') && !id.includes('react-dom') && !id.includes('react-router')) return 'vendor'
             if (id.includes('@tanstack')) return 'query'
-            if (id.includes('@supabase')) return 'supabase'
+            if (id.includes('appwrite')) return 'appwrite'
             if (id.includes('framer-motion') || id.includes('next-themes')) return 'ui'
             if (id.includes('@heroicons') || id.includes('lucide-react')) return 'icons'
             if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod') || id.includes('input-otp')) return 'forms'

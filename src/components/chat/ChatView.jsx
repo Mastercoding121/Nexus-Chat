@@ -9,7 +9,8 @@ import { getWallpaperById } from '../../lib/wallpapers'
 import { encryptMessage, decryptMessage, isE2EEEnabled } from '../../lib/crypto/e2ee'
 import { useVoiceCall } from '../../hooks/useVoiceCall'
 import { appendMessage } from '../../lib/persistence'
-import { sendSupabaseMessage } from '../../lib/supabaseChat'
+import { sendAppwriteMessage } from '../../lib/appwriteChat'
+import { isAppwriteConfigured, ID } from '../../lib/appwrite'
 import { showIncomingNotification } from '../../lib/notifications'
 
 export default function ChatView({ chat, onBack }) {
@@ -78,7 +79,7 @@ export default function ChatView({ chat, onBack }) {
     }
 
     const newMessage = {
-      id: Date.now().toString(),
+      id: isAppwriteConfigured() ? ID.unique() : Date.now().toString(),
       sender_id: 'me',
       content,
       type,
@@ -101,7 +102,7 @@ export default function ChatView({ chat, onBack }) {
 
     if (chat.id && typeof window !== 'undefined') {
       try {
-        await sendSupabaseMessage(chat.id, {
+        await sendAppwriteMessage(chat.id, {
           ...newMessage,
           sender_id: newMessage.sender_id,
         })
