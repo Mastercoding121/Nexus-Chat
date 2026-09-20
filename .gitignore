@@ -43,3 +43,9 @@ android/.gradle/
 android/app/build/
 android/capacitor-android/build/
 android/gradle/wrapper/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example

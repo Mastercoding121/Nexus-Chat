@@ -3,8 +3,10 @@ import react from "@vitejs/plugin-react";
 import base44 from "@base44/vite-plugin";
 import path from "path";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 export default defineConfig({
-  plugins: [react(), base44()],
+  plugins: [react(), base44(), cloudflare()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
