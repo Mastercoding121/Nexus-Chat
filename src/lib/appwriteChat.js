@@ -1,7 +1,7 @@
-import { databases, isAppwriteConfigured, APPWRITE_DATABASE_ID, ID, Query } from './appwrite'
+import { databases, isAppwriteDataAvailable, APPWRITE_DATABASE_ID, ID, Query } from './appwrite'
 
 export async function fetchAppwriteChats() {
-  if (!databases || !isAppwriteConfigured()) return []
+  if (!databases || !isAppwriteDataAvailable()) return []
 
   const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'chats', [
     Query.orderDesc('created_at'),
@@ -10,7 +10,7 @@ export async function fetchAppwriteChats() {
 }
 
 export async function sendAppwriteMessage(chatId, message) {
-  if (!databases || !isAppwriteConfigured()) return null
+  if (!databases || !isAppwriteDataAvailable()) return null
 
   return databases.createDocument(APPWRITE_DATABASE_ID, 'messages', message.id || ID.unique(), {
     chat_id: String(chatId),

@@ -23,7 +23,7 @@ function App() {
   return (
     <SettingsProvider>
       <AuthProvider>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ScrollToTop />
           <Routes>
             <Route path="/" element={<AuthGuard><AuthLanding /></AuthGuard>} />

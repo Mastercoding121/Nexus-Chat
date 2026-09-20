@@ -55,7 +55,7 @@ const verifyOnly = args.has('--verify-only')
 const config = {
   endpoint: env('APPWRITE_ENDPOINT', 'VITE_APPWRITE_ENDPOINT'),
   projectId: env('APPWRITE_PROJECT_ID', 'VITE_APPWRITE_PROJECT_ID'),
-  databaseId: env('APPWRITE_DATABASE_ID', 'VITE_APPWRITE_DATABASE_ID') || 'nexus-chat',
+  databaseId: env('APPWRITE_DATABASE_ID', 'VITE_APPWRITE_DATABASE_ID') || '6aafb57c002d1184ead1',
   apiKey: env('APPWRITE_API_KEY', 'VITE_APPWRITE_API_KEY'),
   adminEmail: env('ADMIN_EMAIL') || ADMIN_DEFAULTS.email,
   adminPassword: env('ADMIN_PASSWORD') || ADMIN_DEFAULTS.password,

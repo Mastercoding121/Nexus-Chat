@@ -30,7 +30,7 @@ export default function NexusNumberInput({ value, onChange, className, placehold
       <input
         type="tel"
         inputMode="numeric"
-        pattern="[0-9-]*"
+        pattern="[0-9\\-]*"
         maxLength={9}
         value={suffixValue}
         onChange={handleChange}

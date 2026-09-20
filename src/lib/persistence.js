@@ -1,4 +1,4 @@
-import { client, databases, isAppwriteConfigured, APPWRITE_DATABASE_ID, ID, Query, Realtime } from './appwrite'
+import { client, databases, isAppwriteDataAvailable, APPWRITE_DATABASE_ID, ID, Query, Realtime } from './appwrite'
 
 const STORAGE_KEY = 'nexus-chat-state-v1'
 const CONTACTS_STORAGE_KEY = 'nexus-contacts-state-v1'
@@ -90,7 +90,7 @@ async function upsertChatDocument(chat) {
 }
 
 export function startRealtimeListeners() {
-  if (!client || !isAppwriteConfigured()) return null
+  if (!client || !isAppwriteDataAvailable()) return null
 
   const realtime = new Realtime(client)
   let closed = false
@@ -100,12 +100,14 @@ export function startRealtimeListeners() {
     [
       `databases.${APPWRITE_DATABASE_ID}.collections.messages.documents`,
       `databases.${APPWRITE_DATABASE_ID}.collections.chats.documents`,
+      `databases.${APPWRITE_DATABASE_ID}.tables.messages.rows`,
+      `databases.${APPWRITE_DATABASE_ID}.tables.chats.rows`,
     ],
     async (event) => {
       const payload = event?.payload
       const events = event?.events || []
-      const isMessage = events.some((name) => name.includes('collections.messages.documents'))
-      const isChat = events.some((name) => name.includes('collections.chats.documents'))
+      const isMessage = events.some((name) => name.includes('messages'))
+      const isChat = events.some((name) => name.includes('.chats.') || name.includes('tables.chats'))
 
       if (isMessage && payload?.chat_id) {
         await appendMessage(String(payload.chat_id), {
@@ -163,7 +165,7 @@ export function stopRealtimeListeners(unsubscribe) {
 
 export async function readChats() {
   let remoteChats = []
-  if (databases && isAppwriteConfigured()) {
+  if (databases && isAppwriteDataAvailable()) {
     try {
       const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'chats', [
         Query.orderDesc('created_at'),
@@ -199,7 +201,7 @@ export async function readChats() {
 export async function writeChats(chats) {
   const localChats = writeLocalChats(chats)
 
-  if (databases && isAppwriteConfigured()) {
+  if (databases && isAppwriteDataAvailable()) {
     try {
       const chatsToUpsert = localChats.filter((chat) => isAppwriteId(chat.id))
       await Promise.all(chatsToUpsert.map((chat) => upsertChatDocument(chat)))
@@ -252,7 +254,7 @@ export async function appendMessage(chatId, message) {
 }
 
 export async function getChatById(chatId) {
-  if (databases && isAppwriteConfigured()) {
+  if (databases && isAppwriteDataAvailable()) {
     try {
       const chatData = await databases.getDocument(APPWRITE_DATABASE_ID, 'chats', chatId)
       const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'messages', [
@@ -279,7 +281,7 @@ export async function getChatById(chatId) {
 export async function createChat(chatData) {
   const chats = await getChats()
   const newChat = {
-    id: isAppwriteConfigured() ? ID.unique() : `${Date.now()}`,
+    id: isAppwriteDataAvailable() ? ID.unique() : `${Date.now()}`,
     title: chatData.title || 'New Chat',
     type: chatData.type || 'private',
     avatar_url: chatData.avatar_url || null,
@@ -338,7 +340,7 @@ export async function searchUserByNexusId(nexusId) {
       return null
     }
 
-    if (databases && isAppwriteConfigured()) {
+    if (databases && isAppwriteDataAvailable()) {
       try {
         const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'members', [
           Query.equal('member_id', normalizedId),

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../lib/AuthContext'
-import { databases, isAppwriteConfigured, canManageAppwriteSchema, getAppwriteConfig, APPWRITE_DATABASE_ID, Query } from '../lib/appwrite'
+import { databases, isAppwriteDataAvailable, canManageAppwriteSchema, getAppwriteConfig, APPWRITE_DATABASE_ID, Query } from '../lib/appwrite'
 import { NEXUS_COLLECTIONS } from '../lib/appwriteSchema'
 import { inspectAppwriteSchema, syncAppwriteSchema, verifyAppwriteSetup } from '../lib/appwriteProvision'
 import Header from '../components/Header'
@@ -28,7 +28,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const loadAdminData = async () => {
-      if (!isAppwriteConfigured() || !databases) {
+      if (!isAppwriteDataAvailable() || !databases) {
         setError('Appwrite is not configured. Set VITE_APPWRITE_ENDPOINT and VITE_APPWRITE_PROJECT_ID.')
         setLoading(false)
         return

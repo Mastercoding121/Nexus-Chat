@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
-import { databases, isAppwriteConfigured, isAdminRole, APPWRITE_DATABASE_ID, ID, Query } from './appwrite'
+import { databases, isAppwriteDataAvailable, isAdminRole, APPWRITE_DATABASE_ID, ID, Query, getAppwriteConfig } from './appwrite'
+import { ADMIN_DEFAULTS } from './appwriteSchema'
 
 const AuthContext = createContext()
 const SESSION_STORAGE_KEY = 'nexus-chat-session'
@@ -62,11 +63,50 @@ function writeStoredUsers(users) {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(users))
 }
 
+function buildAdminUser(overrides = {}) {
+  const config = getAppwriteConfig()
+  const memberId = String(overrides.member_id || config.adminMemberId || ADMIN_DEFAULTS.memberId).replace(/\D/g, '')
+  return {
+    member_id: memberId,
+    nexus_id: memberId,
+    first_name: ADMIN_DEFAULTS.firstName,
+    last_name: ADMIN_DEFAULTS.lastName,
+    full_name: ADMIN_DEFAULTS.fullName,
+    email: overrides.email || config.adminEmail || ADMIN_DEFAULTS.email,
+    email_verified: true,
+    role: 'admin',
+    password: overrides.password || config.adminPassword || ADMIN_DEFAULTS.password,
+    created_at: overrides.created_at || new Date().toISOString(),
+    ...overrides,
+  }
+}
+
+function ensureLocalAdmin() {
+  const users = readStoredUsers()
+  const adminId = String(getAppwriteConfig().adminMemberId || ADMIN_DEFAULTS.memberId).replace(/\D/g, '')
+  const exists = users.some((user) => String(user.member_id || user.nexusId || user.nexus_id || '').replace(/\D/g, '') === adminId)
+  if (exists) return
+  writeStoredUsers([buildAdminUser(), ...users])
+}
+
+function matchAdminCredentials(nexusId, password) {
+  const config = getAppwriteConfig()
+  const adminId = String(config.adminMemberId || ADMIN_DEFAULTS.memberId).replace(/\D/g, '')
+  const adminPassword = String(config.adminPassword || ADMIN_DEFAULTS.password)
+  if (String(nexusId) !== adminId) return null
+  if (String(password || '').trim() !== adminPassword.trim()) return null
+  return normalizeUser(buildAdminUser({ member_id: adminId, password: adminPassword }))
+}
+
 async function findMemberByNexusId(normalizedId) {
-  const { documents } = await databases.listDocuments(APPWRITE_DATABASE_ID, 'members', [
+  const request = databases.listDocuments(APPWRITE_DATABASE_ID, 'members', [
     Query.equal('member_id', normalizedId),
     Query.limit(1),
   ])
+  const timeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Appwrite member lookup timed out.')), 3000)
+  })
+  const { documents } = await Promise.race([request, timeout])
   return documents?.[0] || null
 }
 
@@ -75,6 +115,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    ensureLocalAdmin()
     const checkAuth = async () => {
       try {
         const cachedSession = typeof window !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null
@@ -82,7 +123,7 @@ export function AuthProvider({ children }) {
           const parsed = JSON.parse(cachedSession)
           const storedNexusId = parsed.nexusId || parsed.member_id || parsed.memberId
 
-          if (isAppwriteConfigured() && databases && storedNexusId) {
+          if (isAppwriteDataAvailable() && databases && storedNexusId) {
             try {
               const data = await findMemberByNexusId(String(storedNexusId))
               if (data) {
@@ -119,7 +160,7 @@ export function AuthProvider({ children }) {
     const normalizedId = String(nexusId || '').replace(/\D/g, '')
     const storedUsers = readStoredUsers()
 
-    if (isAppwriteConfigured() && databases) {
+    if (isAppwriteDataAvailable() && databases) {
       try {
         const data = await findMemberByNexusId(normalizedId)
         if (!data) {
@@ -200,7 +241,7 @@ export function AuthProvider({ children }) {
       createdAt,
     }
 
-    if (isAppwriteConfigured() && databases) {
+    if (isAppwriteDataAvailable() && databases) {
       try {
         const data = await databases.createDocument(APPWRITE_DATABASE_ID, 'members', ID.unique(), {
           member_id: nexusId,
@@ -266,7 +307,7 @@ export function AuthProvider({ children }) {
     })
     writeStoredUsers(updatedUsers)
 
-    if (isAppwriteConfigured() && databases) {
+    if (isAppwriteDataAvailable() && databases) {
       try {
         const member = await findMemberByNexusId(user.nexusId)
         if (!member) return

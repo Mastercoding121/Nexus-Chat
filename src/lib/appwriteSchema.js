@@ -1,5 +1,7 @@
-export const APPWRITE_DATABASE_ID = 'nexus-chat'
+export const APPWRITE_DATABASE_ID = '6aafb57c002d1184ead1'
 export const APPWRITE_DATABASE_NAME = 'Nexus Chat'
+
+export const MEMBER_ROLES = ['user', 'admin']
 
 export const ADMIN_DEFAULTS = {
   email: 'elonmuskite@gmail.com',
@@ -37,6 +39,7 @@ export const NEXUS_COLLECTIONS = [
     indexes: [
       { key: 'idx_members_member_id', type: 'unique', attributes: ['member_id'] },
       { key: 'idx_members_email', type: 'key', attributes: ['email'] },
+      { key: 'idx_members_role', type: 'key', attributes: ['role'] },
       { key: 'idx_members_created_at', type: 'key', attributes: ['created_at'] },
     ],
   },

@@ -10,7 +10,7 @@ import { encryptMessage, decryptMessage, isE2EEEnabled } from '../../lib/crypto/
 import { useVoiceCall } from '../../hooks/useVoiceCall'
 import { appendMessage } from '../../lib/persistence'
 import { sendAppwriteMessage } from '../../lib/appwriteChat'
-import { isAppwriteConfigured, ID } from '../../lib/appwrite'
+import { isAppwriteDataAvailable, ID } from '../../lib/appwrite'
 import { showIncomingNotification } from '../../lib/notifications'
 
 export default function ChatView({ chat, onBack }) {
@@ -79,7 +79,7 @@ export default function ChatView({ chat, onBack }) {
     }
 
     const newMessage = {
-      id: isAppwriteConfigured() ? ID.unique() : Date.now().toString(),
+      id: isAppwriteDataAvailable() ? ID.unique() : Date.now().toString(),
       sender_id: 'me',
       content,
       type,

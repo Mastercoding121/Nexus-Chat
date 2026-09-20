@@ -8,12 +8,7 @@ export default function AppTopNav({ variant = 'admin', className = '' }) {
   const tabs = useFilteredTabs()
   const activeTab = getActiveTabFromPath(location.pathname)
 
-  const visibleTabs = useMemo(() => {
-    if (variant === 'admin') {
-      return tabs
-    }
-    return tabs.filter((t) => t.id !== 'admin')
-  }, [tabs, variant])
+  const visibleTabs = useMemo(() => tabs, [tabs])
 
   return (
     <nav
